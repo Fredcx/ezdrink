@@ -211,10 +211,21 @@ const PagarmeClient = {
             return response.data; // Should contain 'id' (the token)
         } catch (error) {
             console.error('Pagar.me Save Card Error:', error.response ? error.response.data : error.message);
-            // Propagate the real error message!
-            const msg = error.response?.data?.message || 'Erro ao salvar cartão no Pagar.me';
+
+            // Capture the raw axios error message if Pagar.me didn't send a structured response
+            const rawErrorMessage = error.message || 'Unknown network error';
+            const msg = error.response?.data?.message || rawErrorMessage;
             const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
-            throw new Error(`${msg} ${details}`);
+
+            // Create a new error with the combined info
+            const err = new Error(`${msg} ${details}`);
+            // Attach the response object so server.js can extract status
+            err.response = {
+                status: error.response?.status || 500,
+                data: error.response?.data || { error: rawErrorMessage }
+            };
+
+            throw err;
         }
     }
 };
