@@ -9,11 +9,10 @@ import { useState, useEffect } from "react";
 interface Order {
     id: string;
     ticket_code: string;
-    items: { name: string; quantity: number }[];
+    items: { name: string; quantity: number; image_url?: string }[];
     total: number;
     date: string;
     status: string;
-    itemCount: number;
 }
 
 export default function OrdersPage() {
@@ -38,7 +37,16 @@ export default function OrdersPage() {
             const data = await res.json();
 
             if (Array.isArray(data)) {
-                setOrders(data);
+                // Map backend fields to frontend interface
+                const mappedOrders = data.map((order: any) => ({
+                    id: order.id,
+                    ticket_code: order.ticket_code,
+                    items: order.items || [],
+                    total: parseFloat(order.total_amount || '0'),
+                    date: new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
+                    status: order.status
+                }));
+                setOrders(mappedOrders);
             }
         } catch (error) {
             console.error("Erro ao buscar pedidos", error);
@@ -118,9 +126,47 @@ export default function OrdersPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100"
                                 >
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{order.items[0]?.name || 'Item desconhecido'} {order.items.length > 1 && `+ ${order.items.length - 1}...`}</h3>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div className="flex items-center gap-4">
+                                            {/* Product Image */}
+                                            <div className="w-16 h-16 rounded-2xl bg-gray-100 overflow-hidden flex-shrink-0">
+                                                {order.items[0]?.image_url ? (
+                                                    <img 
+                                                        src={order.items[0].image_url} 
+                                                        alt={order.items[0].name} 
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <FileText className="w-8 h-8" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
+                                                    {order.items[0]?.name || 'Item desconhecido'} 
+                                                    {order.items.length > 1 && ` + ${order.items.length - 1}`}
+                                                </h3>
+                                                <div className="flex flex-col gap-1 mt-1">
+                                                    <p className="text-xs text-gray-400 font-medium">{order.date}</p>
+                                                    {order.status === 'pending_payment' && (
+                                                        <div className="flex items-center gap-1 text-red-500">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            <span className="text-xs font-bold">Pagamento pendente</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="text-right">
+                                            <span className="block font-bold text-black">R$ {Number(order.total).toFixed(2).replace('.', ',')}</span>
+                                            <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded-md mt-1 inline-block">
+                                                {order.ticket_code || '---'}
+                                            </span>
+                                        </div>
+                                    </div>
                                             <div className="flex flex-col gap-1 mt-1">
                                                 <p className="text-xs text-gray-400 font-medium">{order.date}</p>
                                                 {order.status === 'pending_payment' && (
@@ -139,75 +185,77 @@ export default function OrdersPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end">
-                                        {activeTab === 'active' ? (
-                                            order.status === 'pending_payment' ? (
-                                                <button
-                                                    onClick={() => router.push('/payment/pix')}
-                                                    className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-colors shadow-sm"
-                                                >
-                                                    Ver copia e cola ativo
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => setExpandedQr(order.ticket_code)}
-                                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-                                                >
-                                                    Ver QR CODE
-                                                </button>
-                                            )
-                                        ) : (
-                                            <button
-                                                className="bg-primary hover:brightness-110 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
-                                            >
-                                                <RefreshCw className="w-3 h-3" />
-                                                Pedir novamente
-                                            </button>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))
+                    <div className="flex justify-end">
+                        {activeTab === 'active' ? (
+                            order.status === 'pending_payment' ? (
+                                <button
+                                    onClick={() => router.push('/payment/pix')}
+                                    className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-colors shadow-sm"
+                                >
+                                    Ver copia e cola ativo
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setExpandedQr(order.ticket_code)}
+                                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
+                                >
+                                    Ver QR CODE
+                                </button>
+                            )
+                        ) : (
+                            <button
+                                className="bg-primary hover:brightness-110 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-2"
+                            >
+                                <RefreshCw className="w-3 h-3" />
+                                Pedir novamente
+                            </button>
                         )}
                     </div>
-                </main>
             </motion.div>
+            ))
+                        )}
+        </div>
+                </main >
+            </motion.div >
 
-            {/* QR Code Modal */}
-            <AnimatePresence>
-                {expandedQr && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6"
-                        onClick={() => setExpandedQr(null)}
-                    >
-                        <button
-                            onClick={() => setExpandedQr(null)}
-                            className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full text-black hover:bg-gray-200 transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+        {/* QR Code Modal */ }
+        <AnimatePresence>
+    {
+        expandedQr && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6"
+                onClick={() => setExpandedQr(null)}
+            >
+                <button
+                    onClick={() => setExpandedQr(null)}
+                    className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full text-black hover:bg-gray-200 transition-colors"
+                >
+                    <X className="w-6 h-6" />
+                </button>
 
-                        <h2 className="text-2xl font-bold mb-8">Código de Retirada</h2>
+                <h2 className="text-2xl font-bold mb-8">Código de Retirada</h2>
 
-                        <div
-                            className="bg-white p-4 rounded-3xl shadow-2xl border border-gray-100 mb-8"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <QRCode
-                                value={JSON.stringify({ orderId: expandedQr, timestamp: Date.now() })}
-                                size={300}
-                                viewBox={`0 0 256 256`}
-                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                            />
-                        </div>
-                        <p className="text-gray-500 font-medium text-lg text-center max-w-xs">
-                            Mostre este código para retirar seu pedido #{expandedQr}
-                        </p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                <div
+                    className="bg-white p-4 rounded-3xl shadow-2xl border border-gray-100 mb-8"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <QRCode
+                        value={JSON.stringify({ orderId: expandedQr, timestamp: Date.now() })}
+                        size={300}
+                        viewBox={`0 0 256 256`}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    />
+                </div>
+                <p className="text-gray-500 font-medium text-lg text-center max-w-xs">
+                    Mostre este código para retirar seu pedido #{expandedQr}
+                </p>
+            </motion.div>
+        )
+    }
+            </AnimatePresence >
         </div >
     );
 }
