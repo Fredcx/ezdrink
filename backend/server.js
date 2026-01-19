@@ -195,7 +195,7 @@ async function sendEmailOTP(email, code) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'EzDrink <onboarding@resend.dev>', // Default testing domain
+      from: 'EzDrink <noreply@ezdrink.com.br>', // Must match verified domain
       to: [email],
       subject: 'Seu código de acesso EzDrink',
       html: `<div style="font-family: sans-serif; text-align: center;">
