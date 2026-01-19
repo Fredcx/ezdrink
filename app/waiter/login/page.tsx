@@ -35,9 +35,12 @@ export default function WaiterLoginPage() {
                     return;
                 }
 
-                localStorage.setItem('ezdrink_token', data.token);
-                // Force load to Waiter Dashboard
-                window.location.href = "/waiter";
+                // Use context login to update state immediately and avoid redirect loop
+                login(data.token, data.user);
+
+                // Optional: Short timeout or trust the context to redirect?
+                // But for safety, let's push to router
+                router.push('/waiter');
             } else {
                 alert(data.error || "Erro ao entrar");
             }

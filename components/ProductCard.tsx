@@ -43,7 +43,7 @@ export function ProductCard({ id, name, description, price, image }: ProductCard
 
             {/* Floating Action Button */}
             <button
-                onClick={() => addItem({ id, name, price })}
+                onClick={() => addItem({ id, name, price, image_url: image || undefined })}
                 className="absolute bottom-4 right-4 w-10 h-10 rounded-xl bg-primary/10 group-hover:bg-primary flex items-center justify-center transition-all duration-300 text-primary group-hover:text-black cursor-pointer active:scale-90">
                 <Plus className="w-5 h-5 font-bold stroke-[3px]" />
             </button>

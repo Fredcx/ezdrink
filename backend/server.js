@@ -855,7 +855,8 @@ app.post('/api/orders/create-card', authenticateToken, async (req, res) => {
         name: item.name,
         unit_price: item.price,
         quantity: item.quantity,
-        tangible: true
+        tangible: true,
+        image_url: item.image_url // Persist image URL
       })),
       card_id: card.pagarme_card_id, // The ID Pagar.me knows!
       save_card: false
