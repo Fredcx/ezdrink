@@ -703,7 +703,12 @@ app.post('/api/cards', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error("Save Card Error:", error);
-    res.status(500).json({ error: 'Erro ao salvar cartão: ' + error.message });
+    // Use the upstream status code if available (e.g. 401, 422) or default to 500
+    const status = error.response?.status || 500;
+    res.status(status).json({
+      error: error.message, // This now contains the detailed message from Client
+      details: error.response?.data // Send full details for debugging
+    });
   }
 });
 
