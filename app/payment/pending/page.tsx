@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Clock, CheckCircle } from "lucide-react";
 import { useEffect, useState, Suspense } from "react";
@@ -94,9 +95,9 @@ function PendingPaymentContent() {
                 <span className="text-gray-900">R$ {parseFloat(total || '0').toFixed(2)}</span>
             </div>
 
-            <button onClick={() => router.push('/')} className="mt-8 text-gray-400 font-bold text-sm">
+            <Link href="/" className="mt-8 text-gray-400 font-bold text-sm hover:text-gray-600 transition-colors py-2 px-4">
                 Ir para o início
-            </button>
+            </Link>
         </div>
     );
 }
