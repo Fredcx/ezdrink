@@ -26,7 +26,7 @@ export function Header() {
             const token = localStorage.getItem('ezdrink_token');
             if (token) {
                 try {
-                    const res = await fetch('http://localhost:3001/api/balance', {
+                    const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/balance`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const data = await res.json();
