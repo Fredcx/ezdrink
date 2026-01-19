@@ -95,7 +95,7 @@ function PendingPaymentContent() {
                 <span className="text-gray-900">R$ {parseFloat(total || '0').toFixed(2)}</span>
             </div>
 
-            <Link href="/" className="mt-8 text-gray-400 font-bold text-sm hover:text-gray-600 transition-colors py-2 px-4">
+            <Link href="/" className="mt-8 block w-full text-center text-gray-400 font-bold text-sm hover:text-gray-600 transition-colors py-4 relative z-50">
                 Ir para o início
             </Link>
         </div>
