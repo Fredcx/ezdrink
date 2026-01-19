@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f4f5;
+  /* Light Gray / Zinc-100 equivalent */
+  --foreground: #18181b;
+  /* Zinc-950 */
+  /* Ez Drink Green */
+  --primary: #47f15a;
+  --primary-foreground: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+
+  /* We are forcing the light-gray aesthetic as requested, 
+     so we keep the variables pointing to light values even in dark mode 
+     OR we can let the user's system decide. 
+     Given "Fiel ao figma" which is light/beige, let's FORCE the "Light" look 
+     as the main Identity for now, to ensure the Green/Gray combo works. 
+  */
+  :root {
+    --background: #f4f4f5;
+    --foreground: #18181b;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}

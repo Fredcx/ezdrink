@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1768338539764,
+    "name": "agua",
+    "price": 5,
+    "category_id": 6,
+    "is_popular": false,
+    "created_at": "2026-01-13T21:08:59.764Z",
+    "image_url": "/uploads/1768351484002-291577531.webp"
+  },
+  {
+    "id": 1768338552095,
+    "name": "buchanaaas",
+    "price": 45,
+    "category_id": 4,
+    "is_popular": false,
+    "created_at": "2026-01-13T21:09:12.095Z",
+    "image_url": "/uploads/1768351644536-660653912.jpg"
+  },
+  {
+    "id": 1768338563075,
+    "name": "cerva gelada trincando",
+    "price": 15,
+    "category_id": 1,
+    "is_popular": false,
+    "created_at": "2026-01-13T21:09:23.075Z",
+    "image_url": "/uploads/1768351649718-944377162.jpg"
+  },
+  {
+    "id": 1768338573890,
+    "name": "jack22",
+    "price": 80,
+    "category_id": 3,
+    "is_popular": false,
+    "created_at": "2026-01-13T21:09:33.890Z",
+    "image_url": "/uploads/1768351655642-82673837.webp"
+  }
+]

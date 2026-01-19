@@ -1,0 +1,254 @@
+[
+  {
+    "id": "or_lWJXjbdTkUQY42V3",
+    "ticket_code": "PAG-5291",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 18:39",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T21:39:07.512Z"
+  },
+  {
+    "id": "or_meMXB9AFj6uMzrKo",
+    "ticket_code": "PAG-4516",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 18:40",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T21:40:02.792Z"
+  },
+  {
+    "id": "or_4x3R5Wzi6OHbPv1o",
+    "ticket_code": "PAG-8697",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 18:45",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T21:45:39.200Z"
+  },
+  {
+    "id": "or_B4Y8e4jswh1lrROv",
+    "ticket_code": "PAG-2995",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 18:46",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T21:46:09.730Z"
+  },
+  {
+    "id": "or_v1pVNEC40fb0kmNY",
+    "ticket_code": "PAG-5933",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 18:46",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T21:46:11.663Z"
+  },
+  {
+    "id": "or_apNM1Ltkwh3OmRZE",
+    "ticket_code": "PAG-3727",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "13 de janeiro às 19:12",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T22:12:06.879Z"
+  },
+  {
+    "id": "or_Q0MXYeQhBHrYgp4O",
+    "ticket_code": "PAG-7367",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x buchanaaas"
+    ],
+    "itemCount": 1,
+    "total": 48.75,
+    "status": "ready",
+    "date": "13 de janeiro às 19:35",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T22:35:39.364Z"
+  },
+  {
+    "id": "or_9W7p4ByrHlTjOR1w",
+    "ticket_code": "PAG-8640",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x buchanaaas"
+    ],
+    "itemCount": 1,
+    "total": 48.75,
+    "status": "ready",
+    "date": "13 de janeiro às 19:35",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T22:35:42.665Z"
+  },
+  {
+    "id": "or_6M95aXmfqImG7EWp",
+    "ticket_code": "PAG-5253",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 19:40",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T22:40:37.555Z"
+  },
+  {
+    "id": "or_ZxbRl09hgfzq8kAP",
+    "ticket_code": "PAG-3808",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "13 de janeiro às 20:01",
+    "payment_method": "credit_card",
+    "created_at": "2026-01-13T23:01:20.837Z"
+  },
+  {
+    "id": "ord_1768433368411",
+    "ticket_code": "BAL-5687",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "paid",
+    "date": "14 de janeiro às 20:29",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:29:28.495Z"
+  },
+  {
+    "id": "ord_1768433581761",
+    "ticket_code": "BAL-8642",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:33",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:33:01.793Z"
+  },
+  {
+    "id": "ord_1768433850751",
+    "ticket_code": "BAL-1458",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:37",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:37:30.776Z"
+  },
+  {
+    "id": "ord_1768433986910",
+    "ticket_code": "BAL-9690",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:39",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:39:46.921Z"
+  },
+  {
+    "id": "ord_1768434287181",
+    "ticket_code": "BAL-8469",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:44",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:44:47.191Z"
+  },
+  {
+    "id": "ord_1768434297127",
+    "ticket_code": "BAL-8900",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x cerva gelada trincando"
+    ],
+    "itemCount": 1,
+    "total": 18.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:44",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:44:57.145Z"
+  },
+  {
+    "id": "ord_1768434503216",
+    "ticket_code": "BAL-1658",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "ready",
+    "date": "14 de janeiro às 20:48",
+    "payment_method": "balance",
+    "created_at": "2026-01-14T23:48:23.227Z"
+  },
+  {
+    "id": "ord_1768446718850",
+    "ticket_code": "BAL-1594",
+    "user_email": "admin@ezdrink.com",
+    "items": [
+      "1x agua"
+    ],
+    "itemCount": 1,
+    "total": 8.75,
+    "status": "completed",
+    "date": "15 de janeiro às 00:11",
+    "payment_method": "balance",
+    "created_at": "2026-01-15T03:11:58.866Z"
+  }
+]

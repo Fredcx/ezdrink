@@ -1,0 +1,26 @@
+[
+  {
+    "id": "card_1768338636723",
+    "user_email": "admin@ezdrink.com",
+    "brand": "mastercard",
+    "last4": "1111",
+    "full_data": {
+      "number": "4111111111111111",
+      "name": "PAGAR.ME TESTE",
+      "expiry": "12/30",
+      "cvv": "123"
+    }
+  },
+  {
+    "id": "card_1768341395724",
+    "user_email": "admin@ezdrink.com",
+    "brand": "mastercard",
+    "last4": "1111",
+    "full_data": {
+      "number": "4111111111111111",
+      "name": "ADAS",
+      "expiry": "12/28",
+      "cvv": "123"
+    }
+  }
+]
