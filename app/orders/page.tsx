@@ -32,7 +32,7 @@ export default function OrdersPage() {
             const token = localStorage.getItem('ezdrink_token');
             if (!token) return;
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();

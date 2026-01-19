@@ -50,7 +50,7 @@ export default function AdminProductsPage() {
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`);
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products`);
             const data = await res.json();
             setProducts(data);
         } catch (error) {
@@ -65,7 +65,7 @@ export default function AdminProductsPage() {
         if (img.startsWith('http')) return img;
         // Adjust logic if backend sends full path or just filename
         const filename = img.replace(/^.*[\\\/]/, '');
-        return `${process.env.NEXT_PUBLIC_API_URL}/uploads/${filename}`;
+        return `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/uploads/${filename}`;
     };
 
     const handleOpenModal = (product?: Product) => {
@@ -116,8 +116,8 @@ export default function AdminProductsPage() {
             }
 
             const url = editingProduct
-                ? `${process.env.NEXT_PUBLIC_API_URL}/api/products/${editingProduct.id}`
-                : `${process.env.NEXT_PUBLIC_API_URL}/api/products`;
+                ? `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products/${editingProduct.id}`
+                : `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products`;
 
             const method = editingProduct ? 'PUT' : 'POST';
 
@@ -149,7 +149,7 @@ export default function AdminProductsPage() {
         if (!confirm("Tem certeza que deseja excluir este produto?")) return;
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}`

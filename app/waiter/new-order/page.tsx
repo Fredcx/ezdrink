@@ -22,7 +22,7 @@ export default function WaiterPOSPage() {
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`);
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products`);
             const data = await res.json();
             setProducts(data);
         } catch (error) {
@@ -71,7 +71,7 @@ export default function WaiterPOSPage() {
                 };
             });
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/create-cash`, { // Reusing create-cash for all POS sales but we might need to flag method
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-cash`, { // Reusing create-cash for all POS sales but we might need to flag method
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export default function WaiterPOSPage() {
 
     const getImageUrl = (url: string) => {
         if (!url) return "https://placehold.co/400?text=Drink";
-        return url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL}${url}`;
+        return url.startsWith('http') ? url : `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}${url}`;
     }
 
     return (

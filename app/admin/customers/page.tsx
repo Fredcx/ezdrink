@@ -22,7 +22,7 @@ export default function AdminCustomersPage() {
 
     const fetchCustomers = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/admin/users`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}` }
             });
             if (res.ok) {

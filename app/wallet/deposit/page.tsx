@@ -33,14 +33,14 @@ export default function BalancePage() {
             }
 
             // Fetch Balance
-            const balRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/balance`, {
+            const balRes = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/balance`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const balData = await balRes.json();
             if (balData.balance !== undefined) setBalance(balData.balance);
 
             // Fetch Cards
-            const cardsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cards`, {
+            const cardsRes = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/cards`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const cardsData = await cardsRes.json();
@@ -94,7 +94,7 @@ export default function BalancePage() {
         setProcessing(true);
         try {
             const token = localStorage.getItem('ezdrink_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/balance/add`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/balance/add`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

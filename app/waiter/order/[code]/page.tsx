@@ -49,7 +49,7 @@ export default function WaiterOrderPage({ params }: { params: Promise<{ code: st
 
             console.log("Final Search Code:", searchCode);
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}` }
             });
             const data = await res.json();
@@ -90,7 +90,7 @@ export default function WaiterOrderPage({ params }: { params: Promise<{ code: st
 
         setProcessing(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderToProcess.id}`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/${orderToProcess.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

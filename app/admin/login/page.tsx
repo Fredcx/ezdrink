@@ -33,7 +33,7 @@ export default function AdminLoginPage() {
             // `create_admin.js` created `admin@ezdrink.com`.
             // So we need clear email login.
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, { // Assuming this endpoint handles email from older code or I add it
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/auth/login`, { // Assuming this endpoint handles email from older code or I add it
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

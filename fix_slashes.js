@@ -20,33 +20,30 @@ const files = [
     'app/admin/orders/page.tsx',
     'app/admin/layout.tsx',
     'app/admin/login/page.tsx',
-    'app/admin/customers/page.tsx'
+    'app/admin/customers/page.tsx',
+    'app/login/page.tsx' // Added Login page explicitly
 ];
 
 files.forEach(fileRel => {
     const filePath = path.join(__dirname, fileRel);
     if (!fs.existsSync(filePath)) {
-        console.log(`Skipping missing file: ${fileRel}`);
+        console.log(`Skipping: ${fileRel}`);
         return;
     }
 
     let content = fs.readFileSync(filePath, 'utf8');
-    let original = content;
+    const original = content;
 
-    // Replace single quoted strings: 'http://localhost:3001...' -> `${process.env.NEXT_PUBLIC_API_URL}...`
-    content = content.replace(/'http:\/\/localhost:3001(.*?)'/g, (match, p1) => {
-        return "`" + "${process.env.NEXT_PUBLIC_API_URL}" + p1 + "`";
-    });
+    // Pattern: ${process.env.NEXT_PUBLIC_API_URL}
+    // Replacement: ${(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')}
 
-    // Replace template strings: `http://localhost:3001...` -> `${process.env.NEXT_PUBLIC_API_URL}...`
-    content = content.replace(/`http:\/\/localhost:3001(.*?)`/g, (match, p1) => {
-        return "`" + "${process.env.NEXT_PUBLIC_API_URL}" + p1 + "`";
-    });
+    // We search for the exact string used in previous fix
+    content = content.split('${process.env.NEXT_PUBLIC_API_URL}').join('${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\\/$/, "")}');
 
     if (content !== original) {
         fs.writeFileSync(filePath, content, 'utf8');
-        console.log(`Updated: ${fileRel}`);
+        console.log(`Sanitized: ${fileRel}`);
     } else {
-        console.log(`No changes needed: ${fileRel}`);
+        console.log(`No match: ${fileRel}`);
     }
 });

@@ -43,7 +43,7 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch products
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`)
+    fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/products`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setProducts(data);

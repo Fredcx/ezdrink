@@ -33,7 +33,7 @@ export default function WebhookSimulator() {
                 }
             };
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/webhook/pagarme`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/webhook/pagarme`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

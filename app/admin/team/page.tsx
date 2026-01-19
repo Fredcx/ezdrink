@@ -30,7 +30,7 @@ export default function AdminTeamPage() {
     const fetchTeam = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/establishment/team`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/establishment/team`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}` }
             });
             if (res.ok) {
@@ -49,7 +49,7 @@ export default function AdminTeamPage() {
 
         try {
             const token = localStorage.getItem('ezdrink_token');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/establishment/team/${id}`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/establishment/team/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -72,7 +72,7 @@ export default function AdminTeamPage() {
         if (!newMemberName) return;
         setIsGenerating(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/establishment/team/generate`, {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/establishment/team/generate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
