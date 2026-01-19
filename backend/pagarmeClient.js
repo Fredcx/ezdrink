@@ -56,12 +56,13 @@ const PagarmeClient = {
             } = data;
 
             // Generate fallback CPF if needed
-            const finalCpf = (data.card_raw && data.card_raw.cpf) ? data.card_raw.cpf : generateCPF();
+            const finalCpf = (customer && customer.document) ? customer.document :
+                ((data.card_raw && data.card_raw.cpf) ? data.card_raw.cpf : generateCPF());
 
             const payload = {
                 customer: {
                     name: customer.name,
-                    email: `test_${Date.now()}@ezdrink.com`,
+                    email: customer.email || `test_${Date.now()}@ezdrink.com`,
                     type: 'individual',
                     document: finalCpf,
                     phones: {
