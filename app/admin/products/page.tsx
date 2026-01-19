@@ -2,6 +2,7 @@
 
 import { getImageUrl } from '@/app/utils/imageHelper';
 import { useState, useEffect } from "react";
+import { Plus, Search, Edit2, Trash2, Image as ImageIcon, X, UploadCloud, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Product {
