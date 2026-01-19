@@ -2,7 +2,7 @@ const axios = require('axios');
 
 // API Configuration
 // NOTE: Replace keys with real process.env variables in production
-const API_KEY = process.env.PAGARME_API_KEY || 'sk_test_4f70ea1408d1400a90b3341642992d88';
+const API_KEY = process.env.PAGARME_API_KEY;
 const BASE_URL = 'https://api.pagar.me/core/v5';
 
 const api = axios.create({

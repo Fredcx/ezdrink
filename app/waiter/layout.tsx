@@ -35,7 +35,7 @@ export default function WaiterLayout({ children }: { children: React.ReactNode }
         const verifyRole = async () => {
             const token = localStorage.getItem('ezdrink_token');
             try {
-                const res = await fetch('http://localhost:3001/api/users/me', {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {

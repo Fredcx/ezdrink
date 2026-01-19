@@ -21,7 +21,7 @@ export default function MyCardsPage() {
             const token = localStorage.getItem('ezdrink_token');
             if (!token) return;
 
-            const res = await fetch('http://localhost:3001/api/cards', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cards`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -42,7 +42,7 @@ export default function MyCardsPage() {
         if (!confirm("Remover este cartão?")) return;
         try {
             const token = localStorage.getItem('ezdrink_token');
-            await fetch(`http://localhost:3001/api/cards/${id}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cards/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

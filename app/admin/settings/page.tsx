@@ -38,7 +38,7 @@ export default function AdminSettingsPage() {
 
         try {
             const token = checkToken();
-            const res = await fetch('http://localhost:3001/api/auth/change-password', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/change-password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

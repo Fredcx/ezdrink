@@ -27,7 +27,7 @@ export default function WaiterDashboard() {
         try {
             // This endpoint needs to be created or mocked
             // For now, fetching all orders and filtering locally as a mockup
-            const res = await fetch('http://localhost:3001/api/orders', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}` }
             });
             const data = await res.json();

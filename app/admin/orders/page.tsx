@@ -27,7 +27,7 @@ export default function AdminOrdersPage() {
 
     const fetchOrders = async () => {
         try {
-            const res = await fetch('http://localhost:3001/api/orders', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('ezdrink_token') || ''}` }
             });
             const data = await res.json();

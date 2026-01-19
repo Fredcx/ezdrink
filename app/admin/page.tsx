@@ -24,11 +24,11 @@ export default function AdminDashboard() {
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // Fetch Orders
-            const resOrders = await fetch('http://localhost:3001/api/orders', { headers });
+            const resOrders = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, { headers });
             const orders = await resOrders.json();
 
             // Fetch Users
-            const resUsers = await fetch('http://localhost:3001/api/admin/users', { headers });
+            const resUsers = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users`, { headers });
             const users = await resUsers.json();
 
             if (Array.isArray(orders)) {

@@ -186,7 +186,7 @@ const { Resend } = require('resend');
 async function sendEmailOTP(email, code) {
   const resendApiKey = process.env.RESEND_API_KEY;
 
-  if (!resendApiKey) {
+  if (!resendApiKey || resendApiKey === '123') {
     console.log(`\n[EMAIL MOCK] To: ${email} | Code: ${code}\n`);
     return true;
   }

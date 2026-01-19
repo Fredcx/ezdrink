@@ -31,7 +31,7 @@ export default function CheckoutPage() {
             if (!token) return;
 
             // Fetch Cards
-            const res = await fetch('http://localhost:3001/api/cards', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cards`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
@@ -41,7 +41,7 @@ export default function CheckoutPage() {
             }
 
             // Fetch Balance
-            const balRes = await fetch('http://localhost:3001/api/balance', {
+            const balRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/balance`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const balData = await balRes.json();
@@ -66,7 +66,7 @@ export default function CheckoutPage() {
 
         try {
             const token = localStorage.getItem('ezdrink_token');
-            await fetch(`http://localhost:3001/api/cards/${id}`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cards/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -91,7 +91,7 @@ export default function CheckoutPage() {
             router.push(`/payment/pix?amount=${finalTotal}`);
         } else if (selectedMethod === 'cash') {
             try {
-                const res = await fetch('http://localhost:3001/api/orders/create-cash', {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/create-cash`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export default function CheckoutPage() {
         } else if (selectedMethod === 'balance') {
             // REAL Balance Payment
             try {
-                const res = await fetch('http://localhost:3001/api/orders/create-balance', {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/create-balance`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
             } else {
                 // REAL CARD FLOW
                 try {
-                    const res = await fetch('http://localhost:3001/api/orders/create-card', {
+                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/create-card`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
