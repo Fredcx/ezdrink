@@ -643,6 +643,7 @@ app.get('/api/categories', async (req, res) => {
 // ==================== CARDS ROUTES (PAGAR.ME + SUPABASE) ====================
 
 // 1. Save Card (Tokenize Only)
+// 1. Save Card (Tokenize Only)
 app.post('/api/cards', authenticateToken, async (req, res) => {
   const { number, name, expiry, cvv, cpf, billing, is_foreigner } = req.body;
 
