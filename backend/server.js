@@ -921,8 +921,11 @@ app.post('/api/orders/create-balance', authenticateToken, async (req, res) => {
 app.get('/api/orders', authenticateToken, async (req, res) => {
   let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
 
-  // Filter for normal users
-  if (req.user.user_type === 'customer') {
+  // Filter for normal users (non-staff)
+  const isStaff = ['waiter', 'barman', 'manager', 'admin', 'superadmin'].includes(req.user.establishment_role);
+  const isAdmin = req.user.user_type === 'admin' || req.user.user_type === 'superadmin';
+
+  if (!isStaff && !isAdmin) {
     query = query.eq('user_email', req.user.email);
   }
 
