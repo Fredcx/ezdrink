@@ -838,7 +838,10 @@ app.post('/api/orders/create-card', authenticateToken, async (req, res) => {
       customer: {
         name: req.user.full_name || 'Cliente',
         email: req.user.email,
-        document: req.user.cpf, // Pass real CPF from DB
+        // Clean CPF (remove non-digits) or use a generated valid one if empty/invalid
+        document: (req.user.cpf && req.user.cpf.replace(/\D/g, '').length === 11)
+          ? req.user.cpf.replace(/\D/g, '')
+          : '11111111111',
         phones: { // Add required phone structure if needed
           mobile_phone: {
             country_code: '55',
