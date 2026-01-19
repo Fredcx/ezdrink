@@ -79,7 +79,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                 // Send to backend (Original Flow - Saves Local + Pagar.me Customer)
                 try {
                     const token = localStorage.getItem('ezdrink_token');
-                    const res = await fetch('http://localhost:3001/api/cards', {
+                    const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/cards`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
