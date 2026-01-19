@@ -49,6 +49,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, "");
         if (value.length > 16) value = value.slice(0, 16);
+        // Add spaces every 4 digits
         const formatted = value.replace(/(\d{4})(?=\d)/g, "$1 ");
         setCardNumber(formatted);
     };
@@ -56,6 +57,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, "");
         if (value.length > 4) value = value.slice(0, 4);
+
         if (value.length >= 2) {
             value = `${value.slice(0, 2)}/${value.slice(2)}`;
         }
@@ -189,6 +191,19 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                     </button>
                 </div>
 
+                {/* Foreigner Toggle */}
+                <div className="flex items-center justify-end mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <span className="text-sm font-bold text-gray-500">Sou Estrangeiro / I'm Foreigner</span>
+                        <input
+                            type="checkbox"
+                            checked={isForeigner}
+                            onChange={(e) => setIsForeigner(e.target.checked)}
+                            className="w-5 h-5 accent-primary"
+                        />
+                    </label>
+                </div>
+
                 <div className="space-y-4 mb-8">
                     {/* Number */}
                     <div>
@@ -214,6 +229,20 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                             placeholder="Como está no cartão"
                             value={name}
                             onChange={(e) => setName(e.target.value.toUpperCase())}
+                            className="w-full bg-gray-50 border-gray-200 border rounded-xl py-4 px-4 font-bold text-gray-900 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Document (CPF or Passport) */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                            {isForeigner ? "Documento / Passport ID" : "CPF"}
+                        </label>
+                        <input
+                            type="text"
+                            placeholder={isForeigner ? "Passport Number" : "000.000.000-00"}
+                            value={cpf}
+                            onChange={(e) => setCpf(e.target.value)}
                             className="w-full bg-gray-50 border-gray-200 border rounded-xl py-4 px-4 font-bold text-gray-900 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all outline-none"
                         />
                     </div>
@@ -251,6 +280,45 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Address Fields (Hidden for Foreigners to simplify, optional per user request) */}
+                    {!isForeigner && (
+                        <div className="flex gap-4">
+                            <div className="w-1/3">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">CEP</label>
+                                <input
+                                    type="text"
+                                    placeholder="00000-000"
+                                    value={zipCode}
+                                    onChange={(e) => setZipCode(e.target.value)}
+                                    className="w-full bg-gray-50 border-gray-200 border rounded-xl py-4 px-4 font-bold text-gray-900 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all outline-none"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Número</label>
+                                <input
+                                    type="text"
+                                    placeholder="123"
+                                    value={number}
+                                    onChange={(e) => setNumber(e.target.value)}
+                                    className="w-full bg-gray-50 border-gray-200 border rounded-xl py-4 px-4 font-bold text-gray-900 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {!isForeigner && (
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Endereço (Rua)</label>
+                            <input
+                                type="text"
+                                placeholder="Rua Exemplo"
+                                value={street}
+                                onChange={(e) => setStreet(e.target.value)}
+                                className="w-full bg-gray-50 border-gray-200 border rounded-xl py-4 px-4 font-bold text-gray-900 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white transition-all outline-none"
+                            />
+                        </div>
+                    )}
+
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">
