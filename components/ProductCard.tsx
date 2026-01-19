@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { getImageUrl } from '@/app/utils/imageHelper';
 import { useCart } from "@/context/CartContext";
 
 interface ProductCardProps {
@@ -21,9 +22,9 @@ export function ProductCard({ id, name, description, price, image }: ProductCard
                 {image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={image.startsWith('/') ? `http://localhost:3001${image}` : image}
+                        src={getImageUrl(image)!}
                         alt={name}
-                        className="w-full h-full object-cover rounded-2xl shadow-sm"
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 rounded-2xl shadow-sm"
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center text-xs text-gray-300 shadow-inner">

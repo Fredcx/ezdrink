@@ -1,5 +1,6 @@
 "use client";
 
+import { getImageUrl } from '@/app/utils/imageHelper';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, ShoppingBag, X, CreditCard, Banknote, Smartphone, CheckCircle2 } from "lucide-react";
@@ -105,11 +106,6 @@ export default function WaiterPOSPage() {
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const getImageUrl = (url: string) => {
-        if (!url) return "https://placehold.co/400?text=Drink";
-        return url.startsWith('http') ? url : `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}${url}`;
-    }
 
     return (
         <div className="min-h-screen bg-[#f4f4f5] pb-32">

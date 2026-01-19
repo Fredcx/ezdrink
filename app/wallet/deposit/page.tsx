@@ -38,6 +38,7 @@ export default function BalancePage() {
             });
             const balData = await balRes.json();
             if (balData.balance !== undefined) setBalance(balData.balance);
+            else setBalance(0);
 
             // Fetch Cards
             const cardsRes = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/cards`, {

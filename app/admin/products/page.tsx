@@ -1,7 +1,7 @@
 "use client";
 
+import { getImageUrl } from '@/app/utils/imageHelper';
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, Image as ImageIcon, X, UploadCloud, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Product {
@@ -58,14 +58,6 @@ export default function AdminProductsPage() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getImageUrl = (img: string | null) => {
-        if (!img) return null;
-        if (img.startsWith('http')) return img;
-        // Adjust logic if backend sends full path or just filename
-        const filename = img.replace(/^.*[\\\/]/, '');
-        return `${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/uploads/${filename}`;
     };
 
     const handleOpenModal = (product?: Product) => {

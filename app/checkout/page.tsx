@@ -46,6 +46,7 @@ export default function CheckoutPage() {
             });
             const balData = await balRes.json();
             if (balData.balance !== undefined) setBalance(balData.balance);
+            else setBalance(0); // Default to 0 if undefined
 
         } catch (err) {
             console.error("Erro ao carregar dados", err);
