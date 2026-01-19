@@ -134,7 +134,7 @@ export default function CheckoutPage() {
                 console.error(error);
                 router.push(`/payment/error?method=balance`);
             }
-        } else if (selectedMethod === 'apple' || selectedMethod && selectedMethod.startsWith('card')) {
+        } else if (selectedMethod === 'apple' || savedCards.find(c => c.id === selectedMethod)) {
             if (selectedMethod === 'apple') {
                 router.push(`/payment/error?method=apple`);
             } else {

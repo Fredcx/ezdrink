@@ -811,6 +811,80 @@ app.post('/api/balance/add', authenticateToken, async (req, res) => {
 });
 
 
+// CREATE ORDER VIA SAVED CARD
+app.post('/api/orders/create-card', authenticateToken, async (req, res) => {
+  const { cart, card_id } = req.body;
+  if (!cart || cart.length === 0) return res.status(400).json({ error: 'Carrinho vazio' });
+  if (!card_id) return res.status(400).json({ error: 'Cartão não selecionado' });
+
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = subtotal + 3.75; // Taxa fixa
+
+  // 1. Resolve Pagar.me ID
+  const { data: card, error: cardError } = await supabase.from('cards')
+    .select('pagarme_card_id, brand, last4')
+    .eq('id', card_id)
+    .single();
+
+  if (cardError || !card) {
+    return res.status(400).json({ error: 'Cartão inválido ou não encontrado.' });
+  }
+
+  try {
+    // 2. Charge via Pagar.me
+    const pagarmeOrder = await PagarmeClient.createOrder({
+      amount: total,
+      payment_method: 'credit_card',
+      customer: {
+        name: req.user.full_name || 'Cliente',
+        email: req.user.email,
+        phones: { // Add required phone structure if needed
+          mobile_phone: {
+            country_code: '55',
+            area_code: '11',
+            number: '999999999'
+          }
+        }
+      },
+      items: cart.map(item => ({
+        id: String(item.id),
+        name: item.name,
+        unit_price: item.price,
+        quantity: item.quantity,
+        tangible: true
+      })),
+      card_id: card.pagarme_card_id, // The ID Pagar.me knows!
+      save_card: false
+    });
+
+    if (pagarmeOrder.status === 'paid') {
+      // 3. Save Order in DB
+      const { data: order, error } = await supabase.from('orders').insert({
+        ticket_code: "ORD-" + Math.floor(1000 + Math.random() * 9000),
+        user_email: req.user.email,
+        total_amount: total,
+        payment_method: 'credit_card',
+        status: 'ready', // Or 'paid'
+        items: cart
+      }).select().single();
+
+      if (error) throw error;
+
+      return res.json({ success: true, orderId: order.ticket_code, total });
+    } else {
+      return res.json({
+        success: false,
+        error: `Pagamento recusado: ${pagarmeOrder.status}`
+      });
+    }
+
+  } catch (err) {
+    console.error("Order Card Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.post('/api/orders/create-balance', authenticateToken, async (req, res) => {
   const { cart } = req.body;
   if (!cart || cart.length === 0) return res.status(400).json({ error: 'Carrinho vazio' });
