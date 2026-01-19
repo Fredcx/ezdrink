@@ -2,7 +2,8 @@ const axios = require('axios');
 
 // API Configuration
 // NOTE: Replace keys with real process.env variables in production
-const API_KEY = process.env.PAGARME_API_KEY;
+// Fallback to test key for debugging
+const API_KEY = process.env.PAGARME_API_KEY || 'sk_test_4f70ea1408d1400a90b3341642992d88';
 const BASE_URL = 'https://api.pagar.me/core/v5';
 
 const api = axios.create({
@@ -12,6 +13,8 @@ const api = axios.create({
         'Content-Type': 'application/json',
     }
 });
+
+// ... (existing code for toCents and generateCPF) ... 
 
 /**
  * Formats amount to cents (integer)
@@ -164,7 +167,9 @@ const PagarmeClient = {
 
         } catch (error) {
             console.error('Pagar.me Error Full:', JSON.stringify(error.response ? error.response.data : error.message, null, 2));
-            throw new Error(error.response?.data?.message || 'Erro ao processar pagamento no Pagar.me');
+            const msg = error.response?.data?.message || error.message || 'Erro ao processar pagamento no Pagar.me';
+            const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
+            throw new Error(`${msg} ${details}`);
         }
     },
 
@@ -193,7 +198,10 @@ const PagarmeClient = {
             return response.data; // Should contain 'id' (the token)
         } catch (error) {
             console.error('Pagar.me Save Card Error:', error.response ? error.response.data : error.message);
-            throw new Error('Erro ao salvar cartão no Pagar.me');
+            // Propagate the real error message!
+            const msg = error.response?.data?.message || 'Erro ao salvar cartão no Pagar.me';
+            const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
+            throw new Error(`${msg} ${details}`);
         }
     }
 };
