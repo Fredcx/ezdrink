@@ -15,12 +15,15 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const [name, setName] = useState("");
     const [expiry, setExpiry] = useState("");
     const [cvv, setCvv] = useState("");
-    // New fields for Pagar.me V5
+
+    // Production fields
     const [cpf, setCpf] = useState("");
     const [zipCode, setZipCode] = useState("");
     const [street, setStreet] = useState("");
     const [number, setNumber] = useState("");
-    const [saveCard, setSaveCard] = useState(true); // New state
+
+    const [isForeigner, setIsForeigner] = useState(false); // Toggle for foreigners
+    const [saveCard, setSaveCard] = useState(true);
 
     // Helper to reset
     const resetForm = () => {
@@ -32,6 +35,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
         setZipCode("");
         setStreet("");
         setNumber("");
+        setIsForeigner(false);
         setSaveCard(true);
     };
 
@@ -45,7 +49,6 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, "");
         if (value.length > 16) value = value.slice(0, 16);
-        // Add spaces every 4 digits
         const formatted = value.replace(/(\d{4})(?=\d)/g, "$1 ");
         setCardNumber(formatted);
     };
@@ -53,7 +56,6 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value.replace(/\D/g, "");
         if (value.length > 4) value = value.slice(0, 4);
-
         if (value.length >= 2) {
             value = `${value.slice(0, 2)}/${value.slice(2)}`;
         }
@@ -66,17 +68,53 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
         setCvv(value);
     };
 
+    // Validate CPF (Basic check)
+    const isValidCPF = (str: string) => {
+        if (isForeigner) return str.length >= 5; // Passport/Doc check
+        const clean = str.replace(/\D/g, "");
+        return clean.length === 11;
+    };
+
     const handleSave = async () => {
         const cleanNumber = cardNumber.replace(/\D/g, "");
-        // Expanded validation
-        if (cleanNumber.length >= 13 && // Some cards have fewer than 16 digits, but usually 13-19. Relaxing for test.
-            name.length > 3 &&
-            expiry.length === 5 &&
-            cvv.length >= 3
-            // Removed validation for hidden fields (cpf, zip, street, number) as they are not input by user in this modal version
-        ) {
+
+        // Validation Logic
+        const isCardValid = cleanNumber.length >= 13 && name.length > 3 && expiry.length === 5 && cvv.length >= 3;
+        const isDocValid = isValidCPF(cpf);
+        const isAddressValid = isForeigner ? true : (zipCode.length >= 8 && street.length > 3 && number.length > 0);
+
+        if (isCardValid && isDocValid && isAddressValid) {
+            const billingData = isForeigner ? {
+                // Default fallback for foreigner (since we don't ask address yet to simplify)
+                zip_code: "00000000",
+                street: "Foreign Customer",
+                number: "0",
+                neighborhood: "N/A",
+                city: "N/A",
+                state: "XX",
+                country: "US"
+            } : {
+                zip_code: zipCode.replace(/\D/g, ""),
+                street: street,
+                number: number,
+                neighborhood: "Centro", // Simplification
+                city: "São Paulo", // Simplification - ideally fetch from ZIP
+                state: "SP",
+                country: "BR"
+            };
+
+            const payloadRaw = {
+                number: cleanNumber,
+                name: name,
+                expiry: expiry,
+                cvv: cvv,
+                cpf: cpf.replace(/\D/g, ""),
+                billing: billingData,
+                is_foreigner: isForeigner
+            };
+
             if (saveCard) {
-                // Send to backend (Original Flow - Saves Local + Pagar.me Customer)
+                // Send to backend
                 try {
                     const token = localStorage.getItem('ezdrink_token');
                     const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/cards`, {
@@ -85,22 +123,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({
-                            number: cleanNumber,
-                            name: name,
-                            expiry: expiry,
-                            cvv: cvv,
-                            cpf: cpf.replace(/\D/g, ""),
-                            billing: {
-                                zip_code: zipCode.replace(/\D/g, ""),
-                                street: street,
-                                number: number,
-                                neighborhood: "Centro",
-                                city: "São Paulo",
-                                state: "SP",
-                                country: "BR"
-                            }
-                        })
+                        body: JSON.stringify(payloadRaw)
                     });
                     const data = await res.json();
 
@@ -126,22 +149,7 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
                     last4: cleanNumber.slice(-4),
                     brand: getBrand(cleanNumber),
                     // @ts-ignore
-                    raw: {
-                        number: cleanNumber,
-                        name: name,
-                        expiry: expiry,
-                        cvv: cvv,
-                        cpf: cpf.replace(/\D/g, ""),
-                        billing: {
-                            zip_code: zipCode.replace(/\D/g, ""),
-                            street: street,
-                            number: number,
-                            neighborhood: "Centro",
-                            city: "São Paulo",
-                            state: "SP",
-                            country: "BR"
-                        }
-                    }
+                    raw: payloadRaw
                 });
                 onClose();
                 resetForm();

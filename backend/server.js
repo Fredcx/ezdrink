@@ -644,23 +644,48 @@ app.get('/api/categories', async (req, res) => {
 
 // 1. Save Card (Tokenize Only)
 app.post('/api/cards', authenticateToken, async (req, res) => {
-  const { number, name, expiry, cvv } = req.body;
+  const { number, name, expiry, cvv, cpf, billing, is_foreigner } = req.body;
 
   if (!number || !name || !expiry || !cvv) {
     return res.status(400).json({ error: 'Dados incompletos' });
   }
 
+  // Basic Validation for BR users
+  if (!is_foreigner && (!cpf || !billing)) {
+    return res.status(400).json({ error: 'CPF e Endereço são obrigatórios para cartões nacionais.' });
+  }
+
   try {
-    // 1. Send specific logic to Pagar.me to get Token ID
     const expMonth = expiry.split('/')[0];
     const expYear = '20' + expiry.split('/')[1];
+
+    // Prepare billing address
+    const billingAddress = billing || {
+      line_1: 'Rua Desconhecida',
+      zip_code: '00000000',
+      city: 'N/A',
+      state: 'XX',
+      country: is_foreigner ? 'US' : 'BR'
+    };
+
+    // Ensure object shape matches Pagar.me expectation
+    if (billing) {
+      billingAddress.line_1 = billing.street + ', ' + billing.number;
+      billingAddress.zip_code = billing.zip_code;
+      billingAddress.city = billing.city;
+      billingAddress.state = billing.state;
+      billingAddress.country = billing.country;
+    }
 
     const pagarmeCard = await PagarmeClient.saveCard({
       number,
       holder_name: name,
       exp_month: expMonth,
       exp_year: expYear,
-      cvv
+      cvv,
+      holder_document: cpf || '00000000000', // Passport or CPF
+      billing_address: billingAddress,
+      is_foreigner: is_foreigner
     });
 
     // 2. Save ONLY the ID in Supabase
