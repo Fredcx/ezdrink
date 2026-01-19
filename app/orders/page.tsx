@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 interface Order {
     id: string;
     ticket_code: string;
-    items: string[];
+    items: { name: string; quantity: number }[];
     total: number;
     date: string;
     status: string;
@@ -120,7 +120,7 @@ export default function OrdersPage() {
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{order.items[0]} {order.items.length > 1 && `+ ${order.items.length - 1}...`}</h3>
+                                            <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{order.items[0]?.name || 'Item desconhecido'} {order.items.length > 1 && `+ ${order.items.length - 1}...`}</h3>
                                             <div className="flex flex-col gap-1 mt-1">
                                                 <p className="text-xs text-gray-400 font-medium">{order.date}</p>
                                                 {order.status === 'pending_payment' && (
