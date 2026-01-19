@@ -599,6 +599,18 @@ app.post('/api/products', authenticateToken, upload.single('image'), async (req,
   res.json(newProduct);
 });
 
+// ==================== BALANCE / WALLET ROUTES ====================
+
+app.get('/api/balance', authenticateToken, async (req, res) => {
+  // Simple balance logic: For now we return 0 or fetch from a 'wallets' table if it existed.
+  // Since we don't have a dedicated wallets table in the schema I verified, 
+  // I will assume for MVP the balance is 0 or associated with User metadata if any.
+  // The user reported "..." which means it hangs. We need to return JSON.
+
+  // Future: Fetch from 'transactions' sum
+  res.json({ balance: 0.00 });
+});
+
 app.put('/api/products/:id', authenticateToken, upload.single('image'), async (req, res) => {
   const { name, price, category_id, is_popular, image_url: bodyUrl } = req.body;
 
