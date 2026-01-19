@@ -684,9 +684,11 @@ app.post('/api/cards', authenticateToken, async (req, res) => {
       exp_month: expMonth,
       exp_year: expYear,
       cvv,
-      holder_document: cpf || '00000000000', // Passport or CPF
+      holder_document: cpf || '00000000000',
       billing_address: billingAddress,
-      is_foreigner: is_foreigner
+      is_foreigner: is_foreigner,
+      email: req.user.email, // Pass email to create customer if needed
+      user_id: req.user.id // Pass internal ID if helpful for customer code
     });
 
     // 2. Save ONLY the ID in Supabase

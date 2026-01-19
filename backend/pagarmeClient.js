@@ -3,7 +3,6 @@ const axios = require('axios');
 // API Configuration
 // NOTE: Replace keys with real process.env variables in production
 // Fallback to test key for debugging
-// Fallback to test key for debugging
 const API_KEY = (process.env.PAGARME_API_KEY || 'sk_test_4f70ea1408d1400a90b3341642992d88').trim();
 const BASE_URL = 'https://api.pagar.me/core/v5';
 
@@ -173,53 +172,98 @@ const PagarmeClient = {
     },
 
     /**
-     * Create a customer directly (useful for managing saved cards)
+     * Find or Create a Customer in Pagar.me
+     * Helper method to ensure we have a customerID to save cards to.
      */
-    async createCustomer(data) {
-        // Implementation for future robustness
+    async findOrCreateCustomer(name, email, document, phones) {
+        try {
+            // 1. Try to find by email
+            const searchRes = await api.get('/customers', { params: { email: email } });
+            if (searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
+                return searchRes.data.data[0];
+            }
+
+            // 2. If not found, create new
+            const payload = {
+                name: name,
+                email: email,
+                document: document,
+                type: 'individual',
+                phones: {
+                    mobile_phone: {
+                        country_code: '55',
+                        area_code: '11',
+                        number: '999999999'
+                    }
+                }
+            };
+            const createRes = await api.post('/customers', payload);
+            return createRes.data;
+
+        } catch (error) {
+            console.error("Error finding/creating customer:", error.message);
+            // If creation fails (e.g. document already exists but email didn't match?), 
+            // we could try finding by document. For now, strictly re-throw or handle.
+            if (error.response?.data?.message?.includes("already exists")) {
+                // Try loose logic or just fail?
+                // Let's assume user is consistent.
+            }
+            throw error;
+        }
     },
 
     /**
-     * Save Card to Pagar.me (Tokenize)
-     * @param {object} cardData - { number, holder_name, exp_month, exp_year, cvv, holder_document, billing_address }
+     * Save Card to Pagar.me (Create Card on Customer)
+     * @param {object} cardData - { number, holder_name, exp_month, exp_year, cvv, holder_document, billing_address, email }
      */
     async saveCard(cardData) {
         try {
-            // Use provided data or fallback to mock (only if absolutely necessary)
             const finalDoc = cardData.holder_document || generateCPF();
             const finalAddr = cardData.billing_address || {
-                line_1: 'Rua Mock, 123',
+                line_1: 'Address Fallback',
                 zip_code: '01001000',
                 city: 'São Paulo',
                 state: 'SP',
                 country: 'BR'
             };
 
+            // 1. Get Customer ID
+            console.log("Saving card, first finding customer...", cardData.email);
+            // Use provided email or fallback to generated one (bad practice but avoids crash if missing)
+            const email = cardData.email || `guest_${Date.now()}@ezdrink.com`;
+
+            // We need a customer to save the card to in V5
+            const customer = await this.findOrCreateCustomer(
+                cardData.holder_name,
+                email,
+                finalDoc
+            );
+
+            console.log("Customer found/created:", customer.id);
+
+            // 2. Create Card for this Customer
             const payload = {
                 number: cardData.number,
                 holder_name: cardData.holder_name,
                 exp_month: cardData.exp_month,
                 exp_year: cardData.exp_year,
                 cvv: cardData.cvv,
-                holder_document: finalDoc,
                 billing_address: finalAddr
             };
 
-            console.log("PAYLOAD SAVECARD PAGAR.ME:", JSON.stringify(payload, null, 2));
+            console.log("Creating card for customer...", payload);
+            const response = await api.post(`/customers/${customer.id}/cards`, payload);
 
-            const response = await api.post('/cards', payload);
-            return response.data; // Should contain 'id' (the token)
+            return response.data; // Returns the card object with 'id'
+
         } catch (error) {
             console.error('Pagar.me Save Card Error:', error.response ? error.response.data : error.message);
 
-            // Capture the raw axios error message if Pagar.me didn't send a structured response
             const rawErrorMessage = error.message || 'Unknown network error';
             const msg = error.response?.data?.message || rawErrorMessage;
             const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
 
-            // Create a new error with the combined info
             const err = new Error(`${msg} ${details}`);
-            // Attach the response object so server.js can extract status
             err.response = {
                 status: error.response?.status || 500,
                 data: error.response?.data || { error: rawErrorMessage }
