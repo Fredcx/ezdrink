@@ -14,8 +14,6 @@ const api = axios.create({
     }
 });
 
-// ... (existing code for toCents and generateCPF) ... 
-
 /**
  * Formats amount to cents (integer)
  * @param {number} amount 
@@ -182,12 +180,19 @@ const PagarmeClient = {
 
     /**
      * Save Card to Pagar.me (Tokenize)
-     * @param {object} cardData - { number, holder_name, exp_month, exp_year, cvv }
+     * @param {object} cardData - { number, holder_name, exp_month, exp_year, cvv, holder_document, billing_address }
      */
     async saveCard(cardData) {
         try {
-            // Generate mock CPF/Address to satisfy strict validation if needed
-            const mockCpf = generateCPF();
+            // Use provided data or fallback to mock (only if absolutely necessary)
+            const finalDoc = cardData.holder_document || generateCPF();
+            const finalAddr = cardData.billing_address || {
+                line_1: 'Rua Mock, 123',
+                zip_code: '01001000',
+                city: 'São Paulo',
+                state: 'SP',
+                country: 'BR'
+            };
 
             const payload = {
                 number: cardData.number,
@@ -195,14 +200,8 @@ const PagarmeClient = {
                 exp_month: cardData.exp_month,
                 exp_year: cardData.exp_year,
                 cvv: cardData.cvv,
-                holder_document: mockCpf, // Mock CPF for validation
-                billing_address: {        // Mock Address for validation
-                    line_1: 'Rua de Teste, 123',
-                    zip_code: '01001000',
-                    city: 'São Paulo',
-                    state: 'SP',
-                    country: 'BR'
-                }
+                holder_document: finalDoc,
+                billing_address: finalAddr
             };
 
             console.log("PAYLOAD SAVECARD PAGAR.ME:", JSON.stringify(payload, null, 2));
