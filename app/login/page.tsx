@@ -34,7 +34,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/otp/request', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -59,7 +59,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/otp/verify', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/otp/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code: otp })
@@ -88,7 +88,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/login-pin', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login-pin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, pin })
@@ -117,7 +117,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/otp/register', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/otp/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
