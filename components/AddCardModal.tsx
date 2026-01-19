@@ -69,14 +69,11 @@ export function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
     const handleSave = async () => {
         const cleanNumber = cardNumber.replace(/\D/g, "");
         // Expanded validation
-        if (cleanNumber.length === 16 &&
+        if (cleanNumber.length >= 13 && // Some cards have fewer than 16 digits, but usually 13-19. Relaxing for test.
             name.length > 3 &&
             expiry.length === 5 &&
-            cvv.length >= 3 &&
-            cpf.length >= 11 &&
-            zipCode.length >= 8 &&
-            street.length > 0 &&
-            number.length > 0
+            cvv.length >= 3
+            // Removed validation for hidden fields (cpf, zip, street, number) as they are not input by user in this modal version
         ) {
             if (saveCard) {
                 // Send to backend (Original Flow - Saves Local + Pagar.me Customer)
