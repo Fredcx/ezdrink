@@ -27,11 +27,25 @@ export default function WaiterScanPage() {
         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(200);
 
         // Extract ticket logic
+        // Extract ticket logic
         let ticketCode = code;
         try {
-            if (code.includes('?ticket=')) ticketCode = code.split('?ticket=')[1];
-            else if (code.includes('/')) ticketCode = code.split('/').pop() || code;
-        } catch (e) { }
+            // Check if it's a JSON string first
+            if (code.startsWith('{') && code.includes('orderId')) {
+                const parsed = JSON.parse(code);
+                ticketCode = parsed.orderId;
+            }
+            // Check for URL param
+            else if (code.includes('?ticket=')) {
+                ticketCode = code.split('?ticket=')[1];
+            }
+            // Check for path segment
+            else if (code.includes('/')) {
+                ticketCode = code.split('/').pop() || code;
+            }
+        } catch (e) {
+            console.error("Error parsing QR:", e);
+        }
 
         stopCamera();
         router.push(`/waiter/order/${ticketCode}`);
