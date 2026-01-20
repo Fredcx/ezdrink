@@ -358,7 +358,7 @@ export default function LoginPage() {
                                 disabled={loading}
                                 className="w-full bg-primary hover:bg-primary/90 text-black font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : "Entrar"}
+                                {loading ? <Loader2 className="animate-spin" /> : "Entrar (v2.2)"}
                             </button>
                             <button onClick={() => setStep('FORGOT_EMAIL')} className="w-full text-xs text-gray-500 hover:text-white underline">Esqueci meu PIN</button>
                         </div>
