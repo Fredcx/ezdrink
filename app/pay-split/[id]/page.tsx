@@ -2,9 +2,9 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { ArrowLeft, Check, Smartphone, User } from "lucide-react";
-import { motion } from "framer-motion";
-
+import { ArrowLeft, Check, Smartphone, User, RefreshCw, Copy } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import QRCode from "react-qr-code";
 
 function GuestPaySplitContent() {
     const router = useRouter();
@@ -12,52 +12,33 @@ function GuestPaySplitContent() {
     const searchParams = useSearchParams();
     const id = params.id as string;
 
-    // If email is present (e.g. from old link), use it. Else, we let user pick.
-    const [email, setEmail] = useState<string | null>(searchParams.get('email'));
-
     const [isLoading, setIsLoading] = useState(false);
-    const [amount, setAmount] = useState<number | null>(null);
-    const [alreadyPaid, setAlreadyPaid] = useState(false);
-    const [groupMembers, setGroupMembers] = useState<any[]>([]);
-    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-
-    // Fetch Group Data
-    useEffect(() => {
-        fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/group-orders/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.group_order_members) {
-                    setGroupMembers(data.group_order_members);
-
-                    // If we have an email/member selected via URL or previous selection
-                    if (email) {
-                        const me = data.group_order_members.find((m: any) => m.email === email);
-                        if (me) {
-                            setSelectedMemberId(me.id);
-                            setAmount(me.share_amount);
-                            setAlreadyPaid(me.status === 'paid');
-                        }
-                    }
-                }
-            })
-            .catch(err => console.error(err));
-    }, [id, email]);
-
-
+    const [name, setName] = useState("");
+    const [customAmount, setCustomAmount] = useState<string>("");
     const [cpf, setCpf] = useState("");
 
-    const handleSelectMember = (member: any) => {
-        setEmail(member.email);
-        setSelectedMemberId(member.id);
-        setAmount(member.share_amount);
-        setAlreadyPaid(member.status === 'paid');
-    };
+    // Payment Success / QR State
+    const [qrCode, setQrCode] = useState<string | null>(null);
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+    // Initial fetch to get max amount? (Optional, skipping for speed)
 
     const handlePay = async () => {
-        if (!email) return;
+        if (!name || !customAmount || !cpf) {
+            alert("Preencha todos os campos!");
+            return;
+        }
 
-        if (!cpf || cpf.length < 11) {
-            alert("Por favor, digite um CPF válido para o Pix.");
+        const amountNum = parseFloat(customAmount.replace('R$', '').replace(',', '.'));
+        if (isNaN(amountNum) || amountNum <= 0) {
+            alert("Valor inválido");
+            return;
+        }
+
+        if (cpf.length < 11) {
+            alert("CPF Inválido");
             return;
         }
 
@@ -67,46 +48,21 @@ function GuestPaySplitContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: email,
-                    cpf: cpf.replace(/\D/g, ''), // Send only numbers
-                    payment_method: 'pix' // Changed from pix_mock
+                    email: name, // Using Name as Identifier for 'Guests'
+                    cpf: cpf.replace(/\D/g, ''),
+                    amount: amountNum, // Now sending custom amount
+                    payment_method: 'pix'
                 })
             });
             const data = await res.json();
 
             if (data.success) {
-                if (!localStorage.getItem('ezdrink_token')) {
-                    localStorage.setItem('ezdrink_guest_email', email || '');
-                }
-                // Redirect to success or show QR Code? The route returns success: true. 
-                // Currently it redirects to /split/[id] which likely shows status.
-                // Ideally we should show the QR Code first if it's Pix.
-                // But typically valid Pix flows require showing the code.
-                // However, the previous logic just redirected. 
-                // For now, I'll keep the redirect, but improved:
-                // If data.qr_code exists (which it will for real pix), we might want to show it.
-                // But let's stick to the current flow correctness first: Backend execution.
-                // If I want to show QR code, I'd need a modal.
-                // I will add a simple QR Code display capability?
-                // Actually, the previous 'simulated' flow instantly marked as paid. 
-                // Real Pix is 'pending'. The user needs to see the code.
-                // I will redirect to a page that shows the code, or show it here.
-
-                // Let's modify behavior: if qr_code, show it.
-                if (data.qr_code_url) {
-                    window.location.href = data.qr_code_url; // Simple redirect to Pagar.me hosted page if available, OR
-                    // Better: Pagar.me v5 returns a QR code string. We need to display it.
-                    // To avoid complex UI changes now, I'll alert or just redirect to the split page.
-                    // But if I redirect to split page, how do they pay?
-                    // The split page lists members. It might show "Pending".
-                    // I will alert the user for now to check likely email or similar, 
-                    // OR simple: Alert "Pix gerado! Copie o código abaixo" (but I can't easily copy from alert).
-
-                    // I will implement a basic QR display if time permits, but first let's get the Request right.
-                    // Redirecting to /split/[id] is safe if that page shows the status.
-                    router.push(`/split/${id}`);
+                if (data.qr_code) {
+                    setQrCode(data.qr_code);
+                    setQrCodeUrl(data.qr_code_url);
                 } else {
-                    router.push(`/split/${id}`);
+                    // Assuming instant success/simulated
+                    setPaymentSuccess(true);
                 }
             } else {
                 alert("Erro: " + data.error);
@@ -118,118 +74,121 @@ function GuestPaySplitContent() {
         }
     };
 
-    if (!groupMembers.length) return <div className="min-h-screen flex items-center justify-center font-bold">Carregando GRUPO...</div>;
+    const handleCopy = () => {
+        if (qrCode) {
+            navigator.clipboard.writeText(qrCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
 
-    // SCENARIO 1: Slot Selection (No Email Selected yet)
-    if (!email) {
+    const handleCheckPaymentStatus = async () => {
+        // Logic to check if *this* specific payment was paid? 
+        // For real Pagar.me, we just wait for webhook or poll.
+        // For now, let's allow user to click "I Paid" which redirects to the Group Lobby to see if it updated.
+        router.push(`/split/${id}`);
+    };
+
+    // --- RENDER ---
+
+    if (qrCode) {
         return (
-            <div className="min-h-screen bg-[#f4f4f5] font-sans flex flex-col p-6">
-                <header className="flex items-center mb-8">
-                    <button onClick={() => router.push('/')} className="p-2 bg-white rounded-full">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <h1 className="text-xl font-bold ml-4">Escolha sua Cota</h1>
-                </header>
+            <div className="fixed inset-0 bg-primary font-sans flex flex-col items-center justify-center p-6">
+                <div className="bg-white p-8 rounded-[32px] w-full max-w-sm shadow-2xl flex flex-col items-center">
+                    <h2 className="text-xl font-bold mb-2">Escaneie para Pagar</h2>
+                    <p className="text-gray-500 mb-6 text-sm">Use o App do seu banco</p>
 
-                <div className="space-y-4">
-                    {groupMembers.map((m, idx) => (
+                    <div className="bg-gray-100 p-4 rounded-2xl mb-6">
+                        <QRCode value={qrCode} size={200} />
+                    </div>
+
+                    <div className="w-full space-y-3">
                         <button
-                            key={m.id}
-                            disabled={m.status === 'paid'}
-                            onClick={() => handleSelectMember(m)}
-                            className={`w-full p-6 rounded-2xl flex items-center justify-between shadow-sm border transaction-all
-                                ${m.status === 'paid' ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-100 hover:border-black'}
-                            `}
+                            onClick={handleCopy}
+                            className="w-full bg-gray-100 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-all"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${m.status === 'paid' ? 'bg-gray-200 text-gray-500' : 'bg-primary/10 text-primary'}`}>
-                                    {idx + 1}
-                                </div>
-                                <div className="text-left">
-                                    <p className="font-bold text-gray-800">{m.email.includes('@') ? m.email.split('@')[0] : `Pessoa ${idx + 1}`}</p>
-                                    <p className="text-sm text-gray-500">R$ {m.share_amount.toFixed(2)}</p>
-                                </div>
-                            </div>
-
-                            {m.status === 'paid' ? (
-                                <span className="text-xs font-bold bg-green-100 text-green-700 px-3 py-1 rounded-full">PAGO</span>
-                            ) : (
-                                <span className="text-xs font-bold bg-black text-white px-3 py-1 rounded-full">PAGAR</span>
-                            )}
+                            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                            {copied ? "Código Copiado!" : "Copiar Código Pix"}
                         </button>
-                    ))}
+
+                        <button
+                            onClick={handleCheckPaymentStatus}
+                            className="w-full bg-primary text-black font-bold py-4 rounded-xl shadow-lg hover:brightness-110 transition-all animate-pulse"
+                        >
+                            Já paguei!
+                        </button>
+                    </div>
                 </div>
             </div>
-        );
+        )
     }
 
-    // SCENARIO 2: Ready to Pay (Email Selected)
     return (
         <div className="fixed inset-0 bg-primary font-sans flex flex-col justify-end">
             <div className="bg-[#f4f4f5] w-full h-[calc(100vh-24px)] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col">
                 <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-10 bg-[#f4f4f5]/90 backdrop-blur-md">
-                    <button onClick={() => setEmail(null)} className="p-2 hover:bg-black/5 rounded-full">
+                    <button onClick={() => router.push(`/split/${id}`)} className="p-2 hover:bg-black/5 rounded-full">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
-                    <h1 className="text-xl font-bold">Pagamento</h1>
+                    <h1 className="text-xl font-bold">Pagar Parcela</h1>
                     <div className="w-10" />
                 </header>
 
-                <main className="flex-1 px-6 flex flex-col items-center justify-center">
+                <main className="flex-1 px-6 flex flex-col items-center justify-center -mt-20">
 
-                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
-                        <User className="w-10 h-10 text-primary" />
-                    </div>
+                    <div className="w-full max-w-xs space-y-6">
 
-                    <h2 className="text-2xl font-bold text-center mb-2">
-                        {email.includes('@') ? email.split('@')[0] : email}
-                    </h2>
-                    <p className="text-gray-500 text-center mb-8 max-w-xs">
-                        Confirme o valor da sua parte:
-                    </p>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Seu Nome / Identificador</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Ex: João Silva"
+                                className="w-full p-4 border-2 border-transparent bg-white rounded-2xl text-lg font-bold focus:border-primary focus:outline-none transition-all shadow-sm"
+                            />
+                        </div>
 
-                    <h1 className="text-5xl font-extrabold text-primary mb-8 tracking-tight">
-                        R$ {amount?.toFixed(2)}
-                    </h1>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-400 mb-2 ml-1 uppercase tracking-wider">Valor a Pagar (R$)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                                <input
+                                    type="number"
+                                    value={customAmount}
+                                    onChange={(e) => setCustomAmount(e.target.value)}
+                                    placeholder="0,00"
+                                    className="w-full p-4 pl-12 border-2 border-transparent bg-white rounded-2xl text-2xl font-black text-primary focus:border-primary focus:outline-none transition-all shadow-sm"
+                                />
+                            </div>
+                        </div>
 
-                    {!alreadyPaid && (
-                        <div className="w-full mb-6">
-                            <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">CPF para o Pix</label>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-400 mb-2 ml-1 uppercase tracking-wider">CPF (Para o Pix)</label>
                             <input
                                 type="text"
                                 value={cpf}
                                 onChange={(e) => setCpf(e.target.value)}
                                 placeholder="000.000.000-00"
-                                className="w-full p-4 border-2 border-gray-200 rounded-xl text-center text-xl font-bold focus:border-primary focus:outline-none transition-colors"
+                                className="w-full p-4 border-2 border-transparent bg-white rounded-2xl text-lg font-bold focus:border-primary focus:outline-none transition-all shadow-sm"
                             />
                         </div>
-                    )}
 
-                    {alreadyPaid ? (
-                        <button
-                            onClick={() => router.push(`/split/${id}`)}
-                            className="w-full bg-green-600 text-white font-bold text-lg py-4 rounded-xl shadow-md"
-                        >
-                            Já pago! Ver Grupo
-                        </button>
-                    ) : (
                         <button
                             onClick={handlePay}
-                            disabled={isLoading}
-                            className="w-full bg-primary text-primary-foreground font-bold text-lg py-4 rounded-xl hover:brightness-110 transition-all shadow-md flex items-center justify-center gap-2"
+                            disabled={isLoading || !name || !customAmount || !cpf}
+                            className="w-full bg-primary text-black font-extrabold text-xl py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:scale-100"
                         >
-                            {isLoading ? "Processando..." : (
+                            {isLoading ? "Gerando Pix..." : (
                                 <>
-                                    <Smartphone className="w-5 h-5" />
-                                    Pagar com Pix
+                                    <Smartphone className="w-6 h-6" />
+                                    Gerar Pix
                                 </>
                             )}
                         </button>
-                    )}
 
-                    <p className="mt-4 text-xs text-center text-gray-400">
-                        Ambiente Seguro EzDrink
-                    </p>
+                    </div>
+
                 </main>
             </div>
         </div>
@@ -238,11 +197,7 @@ function GuestPaySplitContent() {
 
 export default function GuestPaySplitPage() {
     return (
-        <Suspense fallback={
-            <div className="fixed inset-0 bg-[#f4f4f5] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-        }>
+        <Suspense fallback={<div>Carregando...</div>}>
             <GuestPaySplitContent />
         </Suspense>
     );

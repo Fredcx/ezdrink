@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
         // 1. Calculate totals
         const subtotal = cart.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
-        const total = subtotal + 3.75; // Taxa fixa
+        const total = subtotal * 1.05; // Taxa de 5%
 
         // 2. Save Base Order
         const { data: order, error: orderError } = await supabase

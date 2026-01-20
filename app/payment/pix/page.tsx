@@ -15,7 +15,7 @@ function PixPaymentContent() {
 
     // Logic to determine amount
     const amountParam = searchParams.get('amount');
-    const displayAmount = amountParam ? parseFloat(amountParam) : (total + 3.75);
+    const displayAmount = amountParam ? parseFloat(amountParam) : (total * 1.05);
 
     // Timer State
     const initialTime = 600; // 10 minutes

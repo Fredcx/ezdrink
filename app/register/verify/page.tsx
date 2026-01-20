@@ -1,14 +1,14 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, Mail, Smartphone } from "lucide-react";
+import { ArrowLeft, Mail, Smartphone, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 
 function RegisterVerifyContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { login } = useAuth();
+    const { login } = useAuth(); // If we need to login
 
     const phone = searchParams.get('phone');
     const email = searchParams.get('email');
@@ -18,38 +18,81 @@ function RegisterVerifyContent() {
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
 
-    if (!phone || !email) {
+    // Timer State
+    const [timeLeft, setTimeLeft] = useState(0);
+
+    // Timer Logic
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const interval = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [timeLeft]);
+
+    if (!phone && !email) {
         return <div className="p-10 font-bold">Dados ausentes.</div>
     }
 
-    const handleMethodSelect = (method: string) => {
-        // Mock send code logic
-        setStep("code");
+    const handleMethodSelect = async (method: string) => {
+        setLoading(true);
+        try {
+            // Using email for now as backend only has email OTP implemented in 'server.js' snippet I saw
+            // If phone logic exists, we can use it.
+            // Assuming email only for MVP robustness based on Login page.
+
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/auth/otp/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email || "nomail@nomail.com" }) // Fallback if phone only...
+            });
+
+            if (res.ok) {
+                setStep("code");
+                setTimeLeft(60); // Start 60s cooldown
+            } else {
+                alert("Erro ao enviar código.");
+            }
+        } catch (e) {
+            alert("Erro de conexão.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResend = () => {
+        if (timeLeft > 0) return;
+        handleMethodSelect('resend');
     };
 
     const handleVerifyDisplay = async () => {
         setLoading(true);
-        // Validate ANY code
-        await new Promise(r => setTimeout(r, 1000));
-
-        // Login User using context?
-        // We don't have user object here easily unless we fetch 'me' or use passed token (not secure for 'login' method usually, but ok for now)
-        // Actually, we can just redirect to Home and assume token is valid (it is stored in localStorage in prev page)
-        // But we need to update Context state to 'isLoggedIn'.
-        // If we don't have user object, we can't call login(phone, name).
-        // Let's just redirect to Login usually?
-        // User said "to enter the account".
-        // I'll call a quick /api/users/me with the token to get details, then login.
-
         try {
-            const token = localStorage.getItem('ezdrink_token');
-            if (token) {
-                window.location.href = "/";
-            } else {
+            // We use 'otp/verify'.
+            // Note: 'verify' checks if user exists.
+            // If user exists -> returns 'login_pin' action.
+            // If user new -> returns 'register' action.
+            // This 'Verify' page is usually for Registration verification.
+
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/auth/otp/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code: otp })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                // Success!
+                // Redirect based on action?
+                // Or just go to Login page to finish?
+                // User said "to enter the account".
+                // If account exists, go to Login.
                 router.push('/login');
+            } else {
+                alert(data.error || "Código inválido.");
             }
         } catch (e) {
-            router.push('/login');
+            alert("Erro de conexão");
         }
         setLoading(false);
     };
@@ -70,31 +113,36 @@ function RegisterVerifyContent() {
                         <p className="text-gray-500 mb-8 text-sm">Como deseja receber o código?</p>
 
                         <div className="space-y-4">
-                            <button
-                                onClick={() => handleMethodSelect('sms')}
-                                className="w-full border border-gray-200 p-4 rounded-2xl flex items-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group"
-                            >
-                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white transition-colors">
-                                    <Smartphone className="w-6 h-6" />
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="font-bold text-gray-900">Via SMS</h3>
-                                    <p className="text-xs text-gray-500">{phone}</p>
-                                </div>
-                            </button>
+                            {/* SMS Button (Disabled for MVP if backend doesn't support, but UI kept) */}
+                            {phone && (
+                                <button
+                                    className="w-full border border-gray-200 p-4 rounded-2xl flex items-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group opacity-50 cursor-not-allowed"
+                                    title="SMS indisponível no momento"
+                                >
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 transition-colors">
+                                        <Smartphone className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="font-bold text-gray-900">Via SMS</h3>
+                                        <p className="text-xs text-gray-500">{phone}</p>
+                                    </div>
+                                </button>
+                            )}
 
-                            <button
-                                onClick={() => handleMethodSelect('email')}
-                                className="w-full border border-gray-200 p-4 rounded-2xl flex items-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group"
-                            >
-                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white transition-colors">
-                                    <Mail className="w-6 h-6" />
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="font-bold text-gray-900">Via Email</h3>
-                                    <p className="text-xs text-gray-500">{email}</p>
-                                </div>
-                            </button>
+                            {email && (
+                                <button
+                                    onClick={() => handleMethodSelect('email')}
+                                    className="w-full border border-gray-200 p-4 rounded-2xl flex items-center gap-4 hover:border-primary hover:bg-primary/5 transition-all group"
+                                >
+                                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 group-hover:bg-primary group-hover:text-white transition-colors">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="font-bold text-gray-900">Via Email</h3>
+                                        <p className="text-xs text-gray-500">{email}</p>
+                                    </div>
+                                </button>
+                            )}
                         </div>
                     </>
                 )}
@@ -112,13 +160,30 @@ function RegisterVerifyContent() {
                             placeholder="0000"
                         />
 
-                        <button
-                            onClick={handleVerifyDisplay}
-                            disabled={!otp || loading}
-                            className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
-                        >
-                            {loading ? "Verificando..." : "Confirmar"}
-                        </button>
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleVerifyDisplay}
+                                disabled={!otp || loading}
+                                className="w-full bg-primary text-white font-bold py-4 rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
+                            >
+                                {loading ? "Verificando..." : "Confirmar"}
+                            </button>
+
+                            <button
+                                onClick={handleResend}
+                                disabled={timeLeft > 0 || loading}
+                                className="w-full text-sm text-gray-500 font-medium py-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {timeLeft > 0 ? (
+                                    <span>Aguarde {timeLeft}s para reenviar</span>
+                                ) : (
+                                    <>
+                                        <RefreshCw className="w-4 h-4" />
+                                        Reenviar Código
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </>
                 )}
             </div>

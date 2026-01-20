@@ -261,6 +261,55 @@ app.post('/api/auth/otp/verify', async (req, res) => {
   }
 });
 
+// 2.5 RESET PIN (Forgot Password)
+app.post('/api/auth/reset-pin', async (req, res) => {
+  const { email, code, pin, cpf } = req.body;
+
+  // 1. Verify OTP
+  const record = otpStore.get(email);
+
+  if (!record) {
+    return res.status(400).json({ error: 'Código não encontrado ou expirado.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(email);
+    return res.status(400).json({ error: 'Código expirado.' });
+  }
+
+  if (record.code !== code) {
+    return res.status(400).json({ error: 'Código incorreto.' });
+  }
+
+  // 2. Fetch User & Verify CPF
+  const { data: user, error: userError } = await supabase.from('users').select('*').eq('email', email).single();
+
+  if (userError || !user) {
+    return res.status(404).json({ error: 'Usuário não encontrado.' });
+  }
+
+  // Simple CPF normalization for comparison (removes non-digits)
+  const normalizedUserCpf = user.cpf ? user.cpf.replace(/\D/g, '') : '';
+  const normalizedInputCpf = cpf ? cpf.replace(/\D/g, '') : '';
+
+  if (normalizedUserCpf !== normalizedInputCpf) {
+    return res.status(400).json({ error: 'CPF incorreto.' });
+  }
+
+  // 3. Update User Password
+  const { error: updateError } = await supabase.from('users').update({ password: pin }).eq('email', email);
+
+  if (updateError) {
+    console.error("Erro reset PIN:", updateError);
+    return res.status(500).json({ error: 'Erro ao atualizar PIN.' });
+  }
+
+  // 4. Consume OTP
+  otpStore.delete(email);
+
+  res.json({ success: true, message: 'PIN alterado com sucesso! Faça login.' });
+});
+
 // 3. Login with PIN (Existing User)
 app.post('/api/auth/login-pin', async (req, res) => {
   const { email, pin } = req.body;

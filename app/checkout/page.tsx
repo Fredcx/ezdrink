@@ -85,7 +85,7 @@ export default function CheckoutPage() {
         }
     }, [items, router]);
 
-    const finalTotal = total + 3.75;
+    const finalTotal = total * 1.05;
 
     const handleConfirmOrder = async () => {
         if (selectedMethod === 'pix') {
@@ -384,7 +384,7 @@ export default function CheckoutPage() {
                             </div>
                             <div className="flex justify-between items-center font-bold text-sm text-gray-500">
                                 <span>Taxa</span>
-                                <span>R$3,75</span>
+                                <span>R${(total * 0.05).toFixed(2).replace('.', ',')}</span>
                             </div>
                             <div className="border-t border-dashed border-black/20 my-2" />
                             <div className="flex justify-between items-center font-bold text-xl">

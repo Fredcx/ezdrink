@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
         // Calculate Total
         const subtotal = cart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-        const total = subtotal + 3.75; // Taxa fixa
+        const total = subtotal * 1.05; // Taxa de 5%
 
         // Create Customer Object for Pagar.me
         const customer = {
