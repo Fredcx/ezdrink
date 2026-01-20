@@ -4,18 +4,32 @@ import { NextResponse } from 'next/server';
 
 // Robust Env Var Fetching
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+// Try Service Role first, then fallback
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-export async function POST(req: Request) {
-    // 1. Check Auth presence
-    const token = req.headers.get('authorization');
-    if (!token) {
-        return NextResponse.json({ error: 'Unauthorized: No token' }, { status: 401 });
+// Helper to check key role
+function getKeyRole(key: string): string {
+    try {
+        const payload = JSON.parse(Buffer.from(key.split('.')[1], 'base64').toString());
+        return payload.role || 'unknown';
+    } catch (e) {
+        return 'invalid_jwt';
     }
+}
+
+export async function POST(req: Request) {
+    const token = req.headers.get('authorization');
+    if (!token) return NextResponse.json({ error: 'Unauthorized: No token' }, { status: 401 });
 
     try {
-        if (!supabaseUrl) throw new Error("Missing SUPABASE_URL");
-        if (!supabaseServiceKey) throw new Error("Missing SUPABASE_KEY (Service Role or Anon)");
+        if (!supabaseUrl) throw new Error("Missing SUPABASE_URL Env Var");
+        if (!supabaseServiceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY Env Var");
+
+        // Validate Key Role
+        const keyRole = getKeyRole(supabaseServiceKey);
+        if (keyRole !== 'service_role') {
+            throw new Error(`Configuration Error: The available API Key has role '${keyRole}'. It MUST be 'service_role' to bypass RLS. Check Vercel Env Vars: SUPABASE_SERVICE_ROLE_KEY.`);
+        }
 
         const body = await req.json();
         const { name, icon, order_index } = body;
@@ -32,20 +46,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error("API Error Debug:", {
-            msg: error.message,
-            hasUrl: !!supabaseUrl,
-            hasKey: !!supabaseServiceKey,
-            keyType: supabaseServiceKey === process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SERVICE' : 'FALLBACK'
-        });
-
-        return NextResponse.json({
-            error: error.message,
-            debug: {
-                hasUrl: !!supabaseUrl,
-                hasKey: !!supabaseServiceKey // Don't return the key itself
-            }
-        }, { status: 500 });
+        console.error("API Error:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
@@ -54,12 +56,14 @@ export async function DELETE(req: Request) {
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        if (!supabaseUrl || !supabaseServiceKey) throw new Error("Configuration Error: Missing Supabase Keys");
+        // Validate Key Role
+        const keyRole = getKeyRole(supabaseServiceKey);
+        if (keyRole !== 'service_role') {
+            throw new Error(`Configuration Error: Key role is '${keyRole}'. Must be 'service_role'.`);
+        }
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
-
-        if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         const { error } = await supabase.from('categories').delete().eq('id', id);
