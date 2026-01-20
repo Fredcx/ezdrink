@@ -9,7 +9,7 @@ export interface Category {
 }
 
 interface CategoryMenuProps {
-    categories: Category[];
+    categories?: Category[]; // Make optional
     selectedId: number | null;
     onSelect: (id: number | null) => void;
 }
@@ -29,13 +29,13 @@ const ICON_MAP: Record<string, any> = {
     "Lanche": Sandwich
 };
 
-export function CategoryMenu({ categories, selectedId, onSelect }: CategoryMenuProps) {
+export function CategoryMenu({ categories = [], selectedId, onSelect }: CategoryMenuProps) {
     return (
         <div className="py-4">
             <h2 className="text-xl font-bold mb-4 px-6 text-foreground tracking-tight">Menu</h2>
 
             <div className="flex gap-4 overflow-x-auto px-6 pb-6 pt-2 scrollbar-hide">
-                {categories.map((cat) => {
+                {(categories || []).map((cat) => {
                     const isActive = (cat.id === 0 && !selectedId) || (cat.id === selectedId);
                     const isUrl = cat.icon?.startsWith("http");
 
