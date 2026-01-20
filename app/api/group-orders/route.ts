@@ -39,25 +39,8 @@ export async function POST(req: Request) {
 
         if (groupError) throw groupError;
 
-        // 4. Create Member Slots
-        const count = totalMembers || 2;
-        const individualShare = total / count;
-
-        const membersToInsert = [];
-        for (let i = 0; i < count; i++) {
-            membersToInsert.push({
-                group_order_id: groupOrder.id,
-                email: `Membro ${i + 1}`, // Placeholder name
-                share_amount: individualShare,
-                status: 'pending'
-            });
-        }
-
-        const { error: membersError } = await supabase
-            .from('group_order_members')
-            .insert(membersToInsert);
-
-        if (membersError) throw membersError;
+        // 4. No Member Slots created initially.
+        // Members will be added dynamically when they pay via /pay-split/[id].
 
         // 5. No Emails sent automatically in this flow (QR Code based)
 
