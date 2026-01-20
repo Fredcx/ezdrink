@@ -31,19 +31,8 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configuração do Multer (Mantido Local por enquanto, ideal seria Storage)
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configuração do Multer para Memória (Correto para Vercel)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -585,7 +574,30 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', authenticateToken, upload.single('image'), async (req, res) => {
   const { name, price, category_id, is_popular, image_url: bodyUrl } = req.body;
-  const image_url = req.file ? `/uploads/${req.file.filename}` : bodyUrl;
+  let image_url = bodyUrl;
+
+  if (req.file) {
+    // Upload to Supabase Storage
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('products') // Accessing public bucket 'products'
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error("Supabase Upload Error:", uploadError);
+      return res.status(500).json({ error: 'Erro ao fazer upload da imagem.' });
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('products')
+      .getPublicUrl(fileName);
+
+    image_url = publicUrlData.publicUrl;
+  }
 
   const { data: newProduct, error } = await supabase.from('products').insert({
     name,
