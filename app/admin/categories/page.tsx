@@ -133,35 +133,60 @@ export default function AdminCategoriesPage() {
                     <Package className="w-5 h-5 text-primary" />
                     Nova Categoria
                 </h2>
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">NOME</label>
-                        <input
-                            type="text"
-                            placeholder="Ex: Drinks Especiais"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-primary transition-colors"
-                        />
+                <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 space-y-4">
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">NOME DA CATEGORIA</label>
+                            <input
+                                type="text"
+                                placeholder="Ex: Drinks Especiais"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 ml-1 mb-2 block">ÍCONE</label>
+                            <div className="grid grid-cols-6 gap-2">
+                                {["Beer", "Wine", "GlassWater", "Cocktail", "Sandwich", "Pizza", "Coffee", "IceCream", "Utensils", "Package"].map((iconName) => (
+                                    <button
+                                        key={iconName}
+                                        onClick={() => setNewCategoryIcon(iconName)}
+                                        className={`h-10 rounded-lg flex items-center justify-center border transition-all ${newCategoryIcon === iconName
+                                                ? "bg-primary text-white border-primary shadow-md scale-105"
+                                                : "bg-gray-50 text-gray-400 border-gray-200 hover:border-primary/50"
+                                            }`}
+                                        title={iconName}
+                                    >
+                                        <div className="w-5 h-5 flex items-center justify-center text-xs">
+                                            {/* We rely on the text being the key, in real app we'd map to components here too for preview */}
+                                            {iconName === newCategoryIcon ? "✓" : iconName.slice(0, 2)}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">Ou emoji/url</label>
+                                <input
+                                    type="text"
+                                    placeholder="Copie um emoji 🍔 ou cole URL"
+                                    value={newCategoryIcon}
+                                    onChange={(e) => setNewCategoryIcon(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-primary transition-colors mt-1"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">ÍCONE (EMOJI OU URL)</label>
-                        <input
-                            type="text"
-                            placeholder="🍹 ou https://..."
-                            value={newCategoryIcon}
-                            onChange={(e) => setNewCategoryIcon(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-primary transition-colors"
-                        />
-                    </div>
+
                     <div className="flex items-end">
                         <button
                             onClick={handleCreateCategory}
                             disabled={isSaving || !newCategoryName}
-                            className="bg-primary text-white font-bold px-6 py-3 rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 flex items-center gap-2 h-[50px] whitespace-nowrap"
+                            className="bg-primary text-white font-bold px-8 py-4 rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 flex items-center gap-2 h-fit mb-1"
                         >
                             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                            Salvar
+                            Salvar Categoria
                         </button>
                     </div>
                 </div>
