@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ArrowLeft, Trash2, Save, Loader2, Package, Search, Beer, Wine, Sandwich, Pizza, Coffee, IceCream, Utensils, GlassWater } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from '@supabase/supabase-js';
+// import { createClient } from '@supabase/supabase-js'; // Not used client-side anymore
 
 // Icon Map for preview
 const ICON_MAP: Record<string, any> = {
@@ -82,16 +81,24 @@ export default function AdminCategoriesPage() {
         if (!newCategoryName.trim()) return;
         setIsSaving(true);
         try {
-            const authClient = getAuthenticatedClient();
-            const { error } = await authClient
-                .from('categories')
-                .insert([{
+            // Use API Route instead of direct Supabase due to Token Mismatch
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
+                },
+                body: JSON.stringify({
                     name: newCategoryName,
                     icon: newCategoryIcon,
-                    order_index: categories.length // Append to end
-                }]);
+                    order_index: categories.length
+                })
+            });
 
-            if (error) throw error;
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to create");
+            }
 
             setNewCategoryName("");
             setNewCategoryIcon("");
@@ -107,13 +114,17 @@ export default function AdminCategoriesPage() {
     const handleDeleteCategory = async (id: number) => {
         if (!confirm("Tem certeza? Produtos nesta categoria podem ficar ocultos.")) return;
         try {
-            const authClient = getAuthenticatedClient();
-            const { error } = await authClient
-                .from('categories')
-                .delete()
-                .eq('id', id);
+            const res = await fetch(`/api/categories?id=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
+                }
+            });
 
-            if (error) throw error;
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to delete");
+            }
             fetchCategories();
         } catch (error: any) {
             console.error("Delete error:", error);
@@ -185,8 +196,8 @@ export default function AdminCategoriesPage() {
                                             key={iconName}
                                             onClick={() => setNewCategoryIcon(iconName)}
                                             className={`h-12 rounded-xl flex items-center justify-center border transition-all ${newCategoryIcon === iconName
-                                                    ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
-                                                    : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
+                                                ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
+                                                : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                                                 }`}
                                             title={iconName}
                                         >
