@@ -50,9 +50,11 @@ function PixPaymentContent() {
     };
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(pixCode);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 3000);
+        if (pixCode) {
+            navigator.clipboard.writeText(pixCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 3000);
+        }
     };
 
     const progressPercentage = (timeLeft / initialTime) * 100;
@@ -93,7 +95,7 @@ function PixPaymentContent() {
                     {/* QR Code Visual */}
                     <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200 mb-6 flex flex-col items-center">
                         <QRCode
-                            value={pixCode}
+                            value={pixCode || ""}
                             size={200}
                             style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                             viewBox={`0 0 256 256`}
