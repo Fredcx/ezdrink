@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+export const runtime = 'nodejs'; // Force Node.js runtime for file upload compatibility
+
 export async function GET() {
     try {
         const { data, error } = await supabase
