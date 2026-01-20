@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Home, Maximize2, X } from "lucide-react";
 import QRCode from "react-qr-code";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import confetti from "canvas-confetti";
 
-export default function PaymentSuccessPage() {
+
+function PaymentSuccessContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const ticket = searchParams.get('ticket') || "8832";
@@ -180,5 +181,17 @@ export default function PaymentSuccessPage() {
             </AnimatePresence>
 
         </div>
+    );
+}
+
+export default function PaymentSuccessPage() {
+    return (
+        <Suspense fallback={
+            <div className="fixed inset-0 bg-white flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+        }>
+            <PaymentSuccessContent />
+        </Suspense>
     );
 }

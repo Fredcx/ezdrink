@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Smartphone, User } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function GuestPaySplitPage() {
+function GuestPaySplitContent() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
@@ -125,5 +125,17 @@ export default function GuestPaySplitPage() {
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function GuestPaySplitPage() {
+    return (
+        <Suspense fallback={
+            <div className="fixed inset-0 bg-[#f4f4f5] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+        }>
+            <GuestPaySplitContent />
+        </Suspense>
     );
 }
