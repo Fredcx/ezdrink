@@ -4,8 +4,10 @@ import { NextResponse } from 'next/server';
 
 // Robust Env Var Fetching
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-// Try Service Role first, then fallback
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// STRICT: Only accept the explicit Service Role Key. Do NOT fallback to other keys.
+// This helps distinguish between "Variable Missing" and "Variable Wrong".
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Helper to check key role
 function getKeyRole(key: string): string {
@@ -23,12 +25,16 @@ export async function POST(req: Request) {
 
     try {
         if (!supabaseUrl) throw new Error("Missing SUPABASE_URL Env Var");
-        if (!supabaseServiceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY Env Var");
 
-        // Validate Key Role
+        // Check if variable exists at all
+        if (!supabaseServiceKey) {
+            throw new Error("Missing Env Var: SUPABASE_SERVICE_ROLE_KEY is undefined on the server.");
+        }
+
+        // Check if variable is valid (Service Role)
         const keyRole = getKeyRole(supabaseServiceKey);
         if (keyRole !== 'service_role') {
-            throw new Error(`Configuration Error: The available API Key has role '${keyRole}'. It MUST be 'service_role' to bypass RLS. Check Vercel Env Vars: SUPABASE_SERVICE_ROLE_KEY.`);
+            throw new Error(`Configuration Error: SUPABASE_SERVICE_ROLE_KEY is set, but contains an '${keyRole}' key. It MUST be the 'service_role' (Secret) key.`);
         }
 
         const body = await req.json();
@@ -56,10 +62,12 @@ export async function DELETE(req: Request) {
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
-        // Validate Key Role
+        if (!supabaseUrl) throw new Error("Missing URL");
+        if (!supabaseServiceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
+
         const keyRole = getKeyRole(supabaseServiceKey);
         if (keyRole !== 'service_role') {
-            throw new Error(`Configuration Error: Key role is '${keyRole}'. Must be 'service_role'.`);
+            throw new Error(`Invalid Key Role: ${keyRole}`);
         }
 
         const { searchParams } = new URL(req.url);
