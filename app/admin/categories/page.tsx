@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Trash2, Save, Loader2, Package, Search } from "lucide-react";
+import { ArrowLeft, Trash2, Save, Loader2, Package, Search, Beer, Wine, Sandwich, Pizza, Coffee, IceCream, Utensils, GlassWater } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from '@supabase/supabase-js';
+
+// Icon Map for preview
+const ICON_MAP: Record<string, any> = {
+    "Beer": Beer,
+    "Wine": Wine,
+    "Sandwich": Sandwich,
+    "Package": Package,
+    "Pizza": Pizza,
+    "Coffee": Coffee,
+    "IceCream": IceCream,
+    "Utensils": Utensils,
+    "GlassWater": GlassWater,
+    "Cocktail": GlassWater,
+};
 
 interface Category {
     id: number;
@@ -46,17 +61,29 @@ export default function AdminCategoriesPage() {
             setCategories(data || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
-            // alert("Erro ao carregar categorias."); // Silent fail is better for UI sometimes, or toast
+            // alert("Erro ao carregar categorias."); 
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Helper to get authenticated client
+    const getAuthenticatedClient = () => {
+        const token = localStorage.getItem('ezdrink_token');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
+
+        return createClient(supabaseUrl, supabaseKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } }
+        });
     };
 
     const handleCreateCategory = async () => {
         if (!newCategoryName.trim()) return;
         setIsSaving(true);
         try {
-            const { error } = await supabase
+            const authClient = getAuthenticatedClient();
+            const { error } = await authClient
                 .from('categories')
                 .insert([{
                     name: newCategoryName,
@@ -80,7 +107,8 @@ export default function AdminCategoriesPage() {
     const handleDeleteCategory = async (id: number) => {
         if (!confirm("Tem certeza? Produtos nesta categoria podem ficar ocultos.")) return;
         try {
-            const { error } = await supabase
+            const authClient = getAuthenticatedClient();
+            const { error } = await authClient
                 .from('categories')
                 .delete()
                 .eq('id', id);
@@ -149,22 +177,23 @@ export default function AdminCategoriesPage() {
                         <div>
                             <label className="text-xs font-bold text-gray-400 ml-1 mb-2 block">ÍCONE</label>
                             <div className="grid grid-cols-6 gap-2">
-                                {["Beer", "Wine", "GlassWater", "Cocktail", "Sandwich", "Pizza", "Coffee", "IceCream", "Utensils", "Package"].map((iconName) => (
-                                    <button
-                                        key={iconName}
-                                        onClick={() => setNewCategoryIcon(iconName)}
-                                        className={`h-10 rounded-lg flex items-center justify-center border transition-all ${newCategoryIcon === iconName
-                                                ? "bg-primary text-white border-primary shadow-md scale-105"
-                                                : "bg-gray-50 text-gray-400 border-gray-200 hover:border-primary/50"
-                                            }`}
-                                        title={iconName}
-                                    >
-                                        <div className="w-5 h-5 flex items-center justify-center text-xs">
-                                            {/* We rely on the text being the key, in real app we'd map to components here too for preview */}
-                                            {iconName === newCategoryIcon ? "✓" : iconName.slice(0, 2)}
-                                        </div>
-                                    </button>
-                                ))}
+                                {Object.keys(ICON_MAP).map((iconName) => {
+                                    if (["Cerveja", "Vinho", "Lanche"].includes(iconName)) return null; // Skip aliases
+                                    const Icon = ICON_MAP[iconName];
+                                    return (
+                                        <button
+                                            key={iconName}
+                                            onClick={() => setNewCategoryIcon(iconName)}
+                                            className={`h-12 rounded-xl flex items-center justify-center border transition-all ${newCategoryIcon === iconName
+                                                    ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
+                                                    : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
+                                                }`}
+                                            title={iconName}
+                                        >
+                                            <Icon className="w-6 h-6" strokeWidth={newCategoryIcon === iconName ? 2.5 : 2} />
+                                        </button>
+                                    )
+                                })}
                             </div>
                             <div className="mt-2">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Ou emoji/url</label>
@@ -220,9 +249,14 @@ export default function AdminCategoriesPage() {
                         <div key={cat.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-gray-200 transition-colors">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl border border-gray-100">
-                                    {/* Handle Icon rendering: URL vs Emoji */}
+                                    {/* Handle Icon rendering: URL vs Emoji vs IconMap */}
                                     {cat.icon && cat.icon.startsWith('http') ? (
                                         <img src={cat.icon} className="w-8 h-8 object-contain" alt="" />
+                                    ) : ICON_MAP[cat.icon] ? (
+                                        (() => {
+                                            const Icon = ICON_MAP[cat.icon];
+                                            return <Icon className="w-6 h-6 text-gray-700" />;
+                                        })()
                                     ) : (
                                         <span>{cat.icon || "📦"}</span>
                                     )}
@@ -233,9 +267,6 @@ export default function AdminCategoriesPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {/* Future: Drag Handle */}
-                                {/* <div className="text-gray-300 cursor-grab p-2"><GripVertical className="w-5 h-5" /></div> */}
-
                                 <button
                                     onClick={() => handleDeleteCategory(cat.id)}
                                     className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"
