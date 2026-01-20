@@ -5,7 +5,6 @@ import { ArrowLeft, Trash2, Save, Loader2, Package, Search, Beer, Wine, Sandwich
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-// import { createClient } from '@supabase/supabase-js'; // Not used client-side anymore
 
 // Icon Map for preview
 const ICON_MAP: Record<string, any> = {
@@ -65,17 +64,6 @@ export default function AdminCategoriesPage() {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    // Helper to get authenticated client
-    const getAuthenticatedClient = () => {
-        const token = localStorage.getItem('ezdrink_token');
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
-
-        return createClient(supabaseUrl, supabaseKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } }
-        });
     };
 
     const handleCreateCategory = async () => {
@@ -197,8 +185,8 @@ export default function AdminCategoriesPage() {
                                             key={iconName}
                                             onClick={() => setNewCategoryIcon(iconName)}
                                             className={`h-12 rounded-xl flex items-center justify-center border transition-all ${newCategoryIcon === iconName
-                                                ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
-                                                : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
+                                                    ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
+                                                    : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                                                 }`}
                                             title={iconName}
                                         >
