@@ -590,7 +590,7 @@ app.post('/api/products', authenticateToken, upload.single('image'), async (req,
 
     if (uploadError) {
       console.error("Supabase Upload Error:", uploadError);
-      return res.status(500).json({ error: 'Erro ao fazer upload da imagem.' });
+      return res.status(500).json({ error: `Erro no upload: ${uploadError.message} (Code: ${uploadError.statusCode || 'Unknown'})` });
     }
 
     const { data: publicUrlData } = supabase.storage
