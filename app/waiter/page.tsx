@@ -6,22 +6,35 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function WaiterDashboard() {
     const router = useRouter();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth(); // Global Auth
+
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [waiterName, setWaiterName] = useState("Equipe");
 
     useEffect(() => {
-        // Mock checking auth
-        // Auth check disabled by user request
-        // if (!token) router.push('/waiter/login');
+        // Protect Route
+        if (!isAuthLoading && !isAuthenticated) {
+            router.push('/login'); // Or specific waiter login if needed
+        } else if (isAuthenticated) {
+            // In real app, decode token to get name
+            setWaiterName("Garçom");
+            fetchMyValidations();
+        }
+    }, [isAuthLoading, isAuthenticated, router]);
 
-        // In real app, decode token to get name
-        setWaiterName("Garçom");
-
-        fetchMyValidations();
-    }, []);
+    // Strict Loading State: Don't render dashboard until auth is confirmed
+    if (isAuthLoading || !isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     const fetchMyValidations = async () => {
         try {

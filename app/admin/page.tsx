@@ -3,8 +3,13 @@
 import { motion } from "framer-motion";
 import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowUpRight } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth(); // Global Auth
+    const router = useRouter();
+
     const [stats, setStats] = useState({
         sales: 0,
         orders: 0,
@@ -13,6 +18,23 @@ export default function AdminDashboard() {
     });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!isAuthLoading && !isAuthenticated) {
+            router.push('/login');
+        } else if (isAuthenticated) {
+            fetchData();
+        }
+    }, [isAuthLoading, isAuthenticated, router]);
+
+    // Strict Loading State: Don't render dashboard until auth is confirmed
+    if (isAuthLoading || !isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     useEffect(() => {
         fetchData();

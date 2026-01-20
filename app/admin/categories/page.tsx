@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Plus, Trash2, Save, GripVertical } from "lucide-react";
+import { ArrowLeft, Trash2, Save, Loader2, Package, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface Category {
     id: number;
@@ -14,17 +15,25 @@ interface Category {
 
 export default function AdminCategoriesPage() {
     const router = useRouter();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth(); // Use global auth context
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
 
     // New Category State
     const [newCategoryName, setNewCategoryName] = useState("");
     const [newCategoryIcon, setNewCategoryIcon] = useState("");
 
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        // Protect Route
+        if (!isAuthLoading && !isAuthenticated) {
+            router.push('/login');
+        } else if (isAuthenticated) {
+            fetchCategories();
+        }
+    }, [isAuthLoading, isAuthenticated, router]); // Dependency on auth state
 
     const fetchCategories = async () => {
         try {
@@ -37,7 +46,7 @@ export default function AdminCategoriesPage() {
             setCategories(data || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
-            alert("Erro ao carregar categorias.");
+            // alert("Erro ao carregar categorias."); // Silent fail is better for UI sometimes, or toast
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +78,7 @@ export default function AdminCategoriesPage() {
     };
 
     const handleDeleteCategory = async (id: number) => {
-        if (!confirm("Tem certeza? Produtos nesta categoria podem ficar órfãos.")) return;
+        if (!confirm("Tem certeza? Produtos nesta categoria podem ficar ocultos.")) return;
         try {
             const { error } = await supabase
                 .from('categories')
@@ -84,81 +93,136 @@ export default function AdminCategoriesPage() {
         }
     };
 
-    const handleUpdateOrder = async () => {
-        // Just a placeholder. Reordering requires drag-n-drop or Up/Down buttons.
-        // For MVP, we use order_index based on creation or simple manual edit?
-        // Let's implement simple Up/Down later if requested.
-    };
+    // Filter categories locally
+    const filteredCategories = categories.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Render Loading State while Auth checks
+    if (isAuthLoading || (!isAuthenticated && isLoading)) { // Wait for auth or initial load
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    // If not authenticated (and done loading), the useEffect redirects, but we return null to avoid flash
+    if (!isAuthenticated) return null;
+
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white font-sans">
-            <header className="p-6 flex items-center gap-4 bg-[#1e1e1e] border-b border-white/10">
+        <div className="max-w-4xl mx-auto min-h-screen bg-gray-50 p-6 md:p-10 font-sans text-slate-900">
+            {/* Header */}
+            <header className="flex items-center gap-4 mb-10">
                 <button
                     onClick={() => router.push('/admin/products')}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors shadow-sm"
                 >
-                    <ArrowLeft className="w-6 h-6" />
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
-                <h1 className="text-xl font-bold">Gerenciar Categorias</h1>
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900">Categorias</h1>
+                    <p className="text-gray-500 font-medium">Organize o cardápio.</p>
+                </div>
             </header>
 
-            <main className="p-6 max-w-2xl mx-auto space-y-6">
-
-                {/* Create New */}
-                <div className="bg-[#1e1e1e] p-6 rounded-2xl border border-white/5 space-y-4">
-                    <h2 className="font-bold text-lg">Nova Categoria</h2>
-                    <div className="grid gap-4 md:grid-cols-2">
+            {/* Create New Block */}
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Package className="w-5 h-5 text-primary" />
+                    Nova Categoria
+                </h2>
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">NOME</label>
                         <input
                             type="text"
-                            placeholder="Nome (ex: Drinks)"
+                            placeholder="Ex: Drinks Especiais"
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
-                            className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Ícone (Emoji ou URL)"
-                            value={newCategoryIcon}
-                            onChange={(e) => setNewCategoryIcon(e.target.value)}
-                            className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-primary transition-colors"
                         />
                     </div>
-                    <button
-                        onClick={handleCreateCategory}
-                        disabled={isSaving || !newCategoryName}
-                        className="w-full bg-primary text-black font-bold py-3 rounded-xl hover:brightness-110 transition-all disabled:opacity-50"
-                    >
-                        {isSaving ? "Salvando..." : "Adicionar Categoria"}
-                    </button>
+                    <div className="flex-1">
+                        <label className="text-xs font-bold text-gray-400 ml-1 mb-1 block">ÍCONE (EMOJI OU URL)</label>
+                        <input
+                            type="text"
+                            placeholder="🍹 ou https://..."
+                            value={newCategoryIcon}
+                            onChange={(e) => setNewCategoryIcon(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-primary transition-colors"
+                        />
+                    </div>
+                    <div className="flex items-end">
+                        <button
+                            onClick={handleCreateCategory}
+                            disabled={isSaving || !newCategoryName}
+                            className="bg-primary text-white font-bold px-6 py-3 rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20 flex items-center gap-2 h-[50px] whitespace-nowrap"
+                        >
+                            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            Salvar
+                        </button>
+                    </div>
                 </div>
+            </div>
 
-                {/* List */}
-                <div className="space-y-2">
-                    {isLoading ? (
-                        <p className="text-center text-gray-500">Carregando...</p>
-                    ) : categories.length === 0 ? (
-                        <p className="text-center text-gray-500">Nenhuma categoria criada.</p>
-                    ) : (
-                        categories.map((cat) => (
-                            <div key={cat.id} className="bg-[#1e1e1e] p-4 rounded-xl border border-white/5 flex items-center justify-between group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-2xl">
-                                        {cat.icon || "📦"}
-                                    </div>
-                                    <span className="font-bold">{cat.name}</span>
+            {/* Search */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center gap-3">
+                <Search className="w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Buscar categoria..."
+                    className="flex-1 font-medium outline-none text-gray-700 placeholder:text-gray-400 bg-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+
+            {/* List */}
+            <div className="space-y-3">
+                {isLoading ? (
+                    <div className="text-center py-10 text-gray-400 animate-pulse flex flex-col items-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        Carregando categorias...
+                    </div>
+                ) : filteredCategories.length === 0 ? (
+                    <div className="text-center py-10 text-gray-400 bg-white rounded-3xl border border-gray-100 border-dashed">
+                        Nenhuma categoria encontrada.
+                    </div>
+                ) : (
+                    filteredCategories.map((cat) => (
+                        <div key={cat.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-gray-200 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-2xl border border-gray-100">
+                                    {/* Handle Icon rendering: URL vs Emoji */}
+                                    {cat.icon && cat.icon.startsWith('http') ? (
+                                        <img src={cat.icon} className="w-8 h-8 object-contain" alt="" />
+                                    ) : (
+                                        <span>{cat.icon || "📦"}</span>
+                                    )}
                                 </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900">{cat.name}</h3>
+                                    <p className="text-xs text-gray-400">ID: {cat.id}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {/* Future: Drag Handle */}
+                                {/* <div className="text-gray-300 cursor-grab p-2"><GripVertical className="w-5 h-5" /></div> */}
+
                                 <button
                                     onClick={() => handleDeleteCategory(cat.id)}
-                                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                    className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"
+                                    title="Excluir"
                                 >
                                     <Trash2 className="w-5 h-5" />
                                 </button>
                             </div>
-                        ))
-                    )}
-                </div>
-
-            </main>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }
