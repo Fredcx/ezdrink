@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowLeft, Trash2, Save, Loader2, Package, Search, Beer, Wine, Sandwich, Pizza, Coffee, IceCream, Utensils, GlassWater } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 // import { createClient } from '@supabase/supabase-js'; // Not used client-side anymore
