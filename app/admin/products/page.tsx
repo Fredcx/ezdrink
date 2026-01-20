@@ -2,8 +2,10 @@
 
 import { getImageUrl } from '@/app/utils/imageHelper';
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, Image as ImageIcon, X, UploadCloud, Loader2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Image as ImageIcon, X, UploadCloud, Loader2, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface Product {
     id: number;
@@ -16,17 +18,15 @@ interface Product {
     is_popular: boolean;
 }
 
-const CATEGORIES = [
-    { id: 1, name: "Cervejerias" },
-    { id: 2, name: "Drinks e Coquetéis" },
-    { id: 3, name: "Combos" },
-    { id: 4, name: "Destilados e Doses" },
-    { id: 5, name: "Vinhos e Espumantes" },
-    { id: 6, name: "Sem Álcool" },
-]; // Mapping based on typical ID structure, adjust if needed
+interface Category {
+    id: number;
+    name: string;
+}
 
 export default function AdminProductsPage() {
+    const router = useRouter();
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
@@ -47,7 +47,13 @@ export default function AdminProductsPage() {
 
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
     }, []);
+
+    const fetchCategories = async () => {
+        const { data } = await supabase.from('categories').select('*').order('order_index');
+        if (data) setCategories(data);
+    };
 
     const fetchProducts = async () => {
         try {
@@ -165,6 +171,13 @@ export default function AdminProductsPage() {
                     <h1 className="text-3xl font-black text-gray-900">Cardápio</h1>
                     <p className="text-gray-500 font-medium">Gerencie suas bebidas e combos.</p>
                 </div>
+                <button
+                    onClick={() => router.push('/admin/categories')}
+                    className="bg-gray-800 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-gray-900 transition-all shadow-lg"
+                >
+                    <List className="w-5 h-5" />
+                    Categorias
+                </button>
                 <button
                     onClick={() => handleOpenModal()}
                     className="bg-primary text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-primary/20"
@@ -314,7 +327,8 @@ export default function AdminProductsPage() {
                                             value={formData.category_id}
                                             onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                                         >
-                                            {CATEGORIES.map(cat => (
+                                            <option value="">Selecione...</option>
+                                            {categories.map(cat => (
                                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                                             ))}
                                         </select>

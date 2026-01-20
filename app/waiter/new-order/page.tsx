@@ -6,10 +6,14 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Search, ShoppingBag, X, CreditCard, Banknote, Smartphone, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { CategoryMenu, Category } from "@/components/CategoryMenu";
+import { supabase } from "@/lib/supabase";
 
 export default function WaiterPOSPage() {
     const router = useRouter();
     const [products, setProducts] = useState<any[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
     const [cart, setCart] = useState<{ [key: string]: number }>({});
     const [loading, setLoading] = useState(true);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -19,7 +23,16 @@ export default function WaiterPOSPage() {
 
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
     }, []);
+
+    const fetchCategories = async () => {
+        const { data } = await supabase
+            .from('categories')
+            .select('*')
+            .order('order_index', { ascending: true });
+        if (data) setCategories(data);
+    };
 
     const fetchProducts = async () => {
         try {
@@ -72,7 +85,7 @@ export default function WaiterPOSPage() {
                 };
             });
 
-            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-cash`, { // Reusing create-cash for all POS sales but we might need to flag method
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-cash`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,7 +93,7 @@ export default function WaiterPOSPage() {
                 },
                 body: JSON.stringify({
                     cart: items,
-                    payment_method: method // We might need to update backend to accept this override or just log it
+                    payment_method: method
                 })
             });
 
@@ -103,24 +116,42 @@ export default function WaiterPOSPage() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategoryId ? p.category_id === selectedCategoryId : true;
+        return matchesSearch && matchesCategory;
+    });
+
+    const menuCategories = [
+        { id: 0, name: "Todos", icon: "📦" },
+        ...categories
+    ];
 
     return (
         <div className="min-h-screen bg-[#f4f4f5] pb-32">
             {/* Header */}
-            <header className="bg-white p-4 sticky top-0 z-10 shadow-sm flex items-center justify-between">
-                <Link href="/waiter" className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
-                    <ArrowLeft className="w-6 h-6 text-gray-700" />
-                </Link>
-                <div className="flex-1 mx-4 bg-gray-100 rounded-full flex items-center px-4 h-10">
-                    <Search className="w-4 h-4 text-gray-400 mr-2" />
-                    <input
-                        className="bg-transparent w-full text-sm outline-none font-medium"
-                        placeholder="Buscar produto..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+            <header className="bg-white p-4 sticky top-0 z-10 shadow-sm flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <Link href="/waiter" className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                        <ArrowLeft className="w-6 h-6 text-gray-700" />
+                    </Link>
+                    <div className="flex-1 mx-4 bg-gray-100 rounded-full flex items-center px-4 h-10">
+                        <Search className="w-4 h-4 text-gray-400 mr-2" />
+                        <input
+                            className="bg-transparent w-full text-sm outline-none font-medium"
+                            placeholder="Buscar produto..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Categories */}
+                <div className="-mx-4">
+                    <CategoryMenu
+                        categories={menuCategories}
+                        selectedId={selectedCategoryId}
+                        onSelect={setSelectedCategoryId}
                     />
                 </div>
             </header>

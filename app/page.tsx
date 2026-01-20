@@ -1,7 +1,7 @@
 "use client";
 
 import { Header } from "@/components/Header";
-import { CategoryMenu } from "@/components/CategoryMenu";
+import { CategoryMenu, Category } from "@/components/CategoryMenu";
 import { SearchBar } from "@/components/SearchBar";
 import { ProductCard } from "@/components/ProductCard";
 import { BottomNav } from "@/components/BottomNav";
@@ -10,6 +10,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface Product {
   id: number;
@@ -21,16 +22,6 @@ interface Product {
   category_id: number;
 }
 
-// Map category IDs to names for display headers
-const CATEGORY_NAMES: Record<number, string> = {
-  1: "Cervejerias",
-  2: "Drinks",
-  3: "Combos",
-  4: "Destilados",
-  5: "Vinhos",
-  6: "Sem Álcool",
-};
-
 export default function Home() {
   const { total, count } = useCart();
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,6 +29,7 @@ export default function Home() {
 
   // State for products and filtering
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -49,6 +41,19 @@ export default function Home() {
         if (Array.isArray(data)) setProducts(data);
       })
       .catch(err => console.error("Erro ao carregar produtos:", err));
+
+    // Fetch categories
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('*')
+        .order('order_index', { ascending: true });
+
+      if (data) {
+        setCategories(data);
+      }
+    };
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -65,6 +70,12 @@ export default function Home() {
     );
   }
 
+  // Prepend "Todos" for the menu
+  const menuCategories = [
+    { id: 0, name: "Todos", icon: "📦" },
+    ...categories
+  ];
+
   return (
     <div className="min-h-screen bg-primary text-foreground font-sans">
       <Header />
@@ -73,6 +84,7 @@ export default function Home() {
 
         <div className="pt-6">
           <CategoryMenu
+            categories={menuCategories}
             selectedId={selectedCategoryId}
             onSelect={setSelectedCategoryId}
           />
@@ -119,17 +131,22 @@ export default function Home() {
                         />
                       ))
                   ) : (
-                    // Grouped View
-                    Object.entries(CATEGORY_NAMES).map(([catIdStr, catName]) => {
-                      const catId = Number(catIdStr);
-                      const catProducts = products.filter(p => p.category_id === catId);
+                    // Grouped View using Dynamic Categories
+                    categories.map((cat) => {
+                      const catProducts = products.filter(p => p.category_id === cat.id);
 
                       if (catProducts.length === 0) return null;
 
                       return (
-                        <div key={catId} className="mb-8 last:mb-0">
+                        <div key={cat.id} className="mb-8 last:mb-0">
                           <h3 className="text-lg font-bold mb-3 text-gray-800 flex items-center gap-2">
-                            {catName}
+                            {/* If icon is url, render img, else text */}
+                            {cat.icon.startsWith('http') ? (
+                              <img src={cat.icon} className="w-5 h-5 object-contain" alt="" />
+                            ) : (
+                              <span>{cat.icon || "📦"}</span>
+                            )}
+                            {cat.name}
                             <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
                               {catProducts.length}
                             </span>

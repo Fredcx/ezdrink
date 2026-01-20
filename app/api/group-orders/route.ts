@@ -41,7 +41,10 @@ export async function POST(req: Request) {
             .select()
             .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+            console.error("Supabase Order Insert Error:", JSON.stringify(orderError, null, 2));
+            throw new Error(`Order Insert Failed: ${orderError.message}`);
+        }
 
         // 3. Create Group Order record
         const { data: groupOrder, error: groupError } = await supabase
@@ -54,20 +57,22 @@ export async function POST(req: Request) {
             .select()
             .single();
 
-        if (groupError) throw groupError;
+        if (groupError) {
+            console.error("Supabase Group_Order Insert Error:", JSON.stringify(groupError, null, 2));
+            // Rollback order? Ideally yes, but Supabase doesn't support convenient transactions via JS client easily without RPC.
+            // For now, allow order to stay as orphan or 'failed'.
+            throw new Error(`Group Order Insert Failed: ${groupError.message}`);
+        }
 
         // 4. No Member Slots created initially.
         // Members will be added dynamically when they pay via /pay-split/[id].
 
         // 5. No Emails sent automatically in this flow (QR Code based)
 
-
-
-
         return NextResponse.json({ success: true, groupOrderId: groupOrder.id });
 
     } catch (error: any) {
-        console.error("Create Group Order Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("Create Group Order Final Error:", error);
+        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
     }
 }

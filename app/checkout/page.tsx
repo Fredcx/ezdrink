@@ -78,16 +78,19 @@ export default function CheckoutPage() {
         }
     };
 
-    // Redirect if cart empty
+    // Redirect if cart empty ONLY if not processing an order
+    const [isProcessing, setIsProcessing] = useState(false);
+
     useEffect(() => {
-        if (items.length === 0) {
+        if (items.length === 0 && !isProcessing) {
             router.push("/");
         }
-    }, [items, router]);
+    }, [items, router, isProcessing]);
 
     const finalTotal = total * 1.05;
 
     const handleConfirmOrder = async () => {
+        setIsProcessing(true);
         if (selectedMethod === 'pix') {
             try {
                 const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-pix`, {
