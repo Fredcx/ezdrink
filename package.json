@@ -9,10 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.90.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.25.0",
     "html5-qrcode": "^2.3.8",
+    "jsonwebtoken": "^9.0.3",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
