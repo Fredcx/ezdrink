@@ -85,11 +85,18 @@ export default function CartPage() {
                 </main>
 
                 {!isEmpty && (
-                    <div className="p-6 bg-white border-t border-gray-100 shadow-lg">
+                    <div className="p-6 bg-white border-t border-gray-100 shadow-lg grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => router.push('/split/create')}
+                            className="w-full bg-white text-primary border-2 border-primary font-bold text-lg py-4 rounded-xl hover:bg-gray-50 transition-all shadow-sm"
+                        >
+                            Dividir
+                        </button>
                         <button
                             onClick={() => router.push('/checkout')}
-                            className="w-full bg-primary text-primary-foreground font-bold text-lg py-4 rounded-xl hover:brightness-110 transition-all shadow-md">
-                            Ir para o pagamento
+                            className="w-full bg-primary text-primary-foreground font-bold text-lg py-4 rounded-xl hover:brightness-110 transition-all shadow-md"
+                        >
+                            Pagar
                         </button>
                     </div>
                 )}

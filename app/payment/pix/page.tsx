@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowLeft, Copy, Check, Smartphone } from "lucide-react";
+import QRCode from "react-qr-code";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { useCart } from "@/context/CartContext";
@@ -20,7 +21,8 @@ function PixPaymentContent() {
     const initialTime = 600; // 10 minutes
     const [timeLeft, setTimeLeft] = useState(initialTime);
 
-    const pixCode = "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913Ez Drink Ltd6008Brasilia62070503***6304E2CA";
+    const pixCode = searchParams.get('qr_code') || "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913Ez Drink Ltd6008Brasilia62070503***6304E2CA";
+    const ticket = searchParams.get('ticket');
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -57,7 +59,7 @@ function PixPaymentContent() {
                     </button>
                     <div className="flex flex-col items-center">
                         <h1 className="text-xl font-bold">Pagamento</h1>
-                        <span className="text-xs text-gray-500">Meu carrinho</span>
+                        <span className="text-xs text-gray-500">{ticket ? `Pedido #${ticket}` : "Meu carrinho"}</span>
                     </div>
                     <div className="w-10" />
                 </header>
@@ -76,8 +78,21 @@ function PixPaymentContent() {
                         R$ {displayAmount.toFixed(2).replace('.', ',')}
                     </h1>
 
-                    <p className="text-gray-500 text-sm text-center px-4 mb-8">
-                        Copie o código abaixo e utilize o Pix Copia e Cola no aplicativo que você fará o pagamento.
+                    {/* QR Code Visual */}
+                    <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-200 mb-6 flex flex-col items-center">
+                        <QRCode
+                            value={pixCode}
+                            size={200}
+                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                            viewBox={`0 0 256 256`}
+                        />
+                        <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">
+                            Escaneie com seu app do banco
+                        </p>
+                    </div>
+
+                    <p className="text-gray-500 text-sm text-center px-4 mb-4">
+                        Ou copie o código abaixo para usar o Pix Copia e Cola:
                     </p>
 
                     {/* Copy Paste Field */}
@@ -118,7 +133,7 @@ function PixPaymentContent() {
                     </button>
 
                     <button
-                        onClick={() => router.push('/payment/success')}
+                        onClick={() => router.push('/orders')}
                         className="text-sm text-gray-500 font-bold hover:text-black transition-colors"
                     >
                         Já realizei o pagamento

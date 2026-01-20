@@ -3,12 +3,17 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Home, Maximize2, X } from "lucide-react";
 import QRCode from "react-qr-code";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 
 export default function PaymentSuccessPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const ticket = searchParams.get('ticket') || "8832";
+    const total = searchParams.get('total') || "0.00";
+    const method = searchParams.get('method') || "Pix";
+
     const [isExpanded, setIsExpanded] = useState(false);
 
     useEffect(() => {
@@ -65,7 +70,7 @@ export default function PaymentSuccessPage() {
                         Pedido Confirmado!
                     </h1>
                     <p className="text-gray-500 font-medium text-sm mb-6 max-w-xs mx-auto">
-                        Pedido <span className="text-black font-bold">#8832</span>
+                        Pedido <span className="text-black font-bold">#{ticket}</span>
                     </p>
                 </motion.div>
 
@@ -85,7 +90,7 @@ export default function PaymentSuccessPage() {
 
                     <div className="bg-white p-2 rounded-xl mb-4">
                         <QRCode
-                            value={JSON.stringify({ orderId: "8832", timestamp: Date.now() })}
+                            value={JSON.stringify({ orderId: ticket, timestamp: Date.now() })}
                             size={160}
                             viewBox={`0 0 256 256`}
                             style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -107,11 +112,11 @@ export default function PaymentSuccessPage() {
                     <div className="space-y-3">
                         <div className="flex justify-between items-center border-b border-gray-200 pb-3">
                             <span className="text-gray-500 font-medium text-sm">Total pago</span>
-                            <span className="text-black font-bold text-base">R$ 153,75</span>
+                            <span className="text-black font-bold text-base">R$ {parseFloat(total).toFixed(2).replace('.', ',')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-200 pb-3">
                             <span className="text-gray-500 font-medium text-sm">Pagamento</span>
-                            <span className="text-black font-bold text-base">Pix</span>
+                            <span className="text-black font-bold text-base">{method}</span>
                         </div>
 
                         <div className="pt-1">

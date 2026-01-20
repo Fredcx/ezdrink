@@ -89,7 +89,36 @@ export default function CheckoutPage() {
 
     const handleConfirmOrder = async () => {
         if (selectedMethod === 'pix') {
-            router.push(`/payment/pix?amount=${finalTotal}`);
+            try {
+                const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-pix`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
+                    },
+                    body: JSON.stringify({ cart: items })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    clearCart();
+                    // Encode QR code if necessary, but typically we pass it in URL or store in state? 
+                    // Passing long string in URL might be risky but standard practices often use ID.
+                    // The Pix Page should ideally fetch order details OR we pass everything.
+                    // For simplicity, passing everything now.
+                    const params = new URLSearchParams({
+                        amount: data.total.toString(),
+                        ticket: data.orderId,
+                        qr_code: data.qr_code || ''
+                    });
+                    router.push(`/payment/pix?${params.toString()}`);
+                } else {
+                    alert("Erro ao gerar Pix: " + (data.error || "Tente novamente"));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Erro de conexão ao gerar Pix");
+            }
         } else if (selectedMethod === 'cash') {
             try {
                 const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-cash`, {
