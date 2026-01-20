@@ -1,13 +1,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-
-// Robust Env Var Fetching
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-
-// STRICT: Only accept the explicit Service Role Key. Do NOT fallback to other keys.
-// This helps distinguish between "Variable Missing" and "Variable Wrong".
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import fs from 'fs';
+import path from 'path';
 
 // Helper to check key role
 function getKeyRole(key: string): string {
@@ -19,16 +14,48 @@ function getKeyRole(key: string): string {
     }
 }
 
+// Robust Env Var Fetching with FS Fallback (for local dev without restart)
+function getServiceConfig() {
+    let url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    let key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    // Fallback: Try reading .env.local directly if key is missing
+    if (!key || !url) {
+        try {
+            const envPath = path.join(process.cwd(), '.env.local');
+            if (fs.existsSync(envPath)) {
+                const envContent = fs.readFileSync(envPath, 'utf8');
+                const lines = envContent.split('\n');
+                for (const line of lines) {
+                    const match = line.match(/^([^=]+)=(.*)$/);
+                    if (match) {
+                        const k = match[1].trim();
+                        const v = match[2].trim().replace(/^["']|["']$/g, ''); // Remove quotes
+                        if (k === 'SUPABASE_SERVICE_ROLE_KEY' && !key) key = v;
+                        if (k === 'SUPABASE_URL' && !url) url = v;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to read .env.local fallback:", e);
+        }
+    }
+
+    return { supabaseUrl: url || "", supabaseServiceKey: key };
+}
+
 export async function POST(req: Request) {
     const token = req.headers.get('authorization');
     if (!token) return NextResponse.json({ error: 'Unauthorized: No token' }, { status: 401 });
 
     try {
+        const { supabaseUrl, supabaseServiceKey } = getServiceConfig();
+
         if (!supabaseUrl) throw new Error("Missing SUPABASE_URL Env Var");
 
         // Check if variable exists at all
         if (!supabaseServiceKey) {
-            throw new Error("Missing Env Var: SUPABASE_SERVICE_ROLE_KEY is undefined on the server.");
+            throw new Error("Missing Env Var: SUPABASE_SERVICE_ROLE_KEY is undefined on the server. Please check .env.local or Vercel Settings.");
         }
 
         // Check if variable is valid (Service Role)
@@ -62,6 +89,8 @@ export async function DELETE(req: Request) {
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
+        const { supabaseUrl, supabaseServiceKey } = getServiceConfig();
+
         if (!supabaseUrl) throw new Error("Missing URL");
         if (!supabaseServiceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
 
