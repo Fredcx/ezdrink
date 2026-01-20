@@ -2,9 +2,25 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+import { verify } from 'jsonwebtoken';
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+
+        // 0. Authenticate User
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const token = authHeader.split(' ')[1];
+        let userEmail = '';
+
+        try {
+            const decoded: any = verify(token, process.env.JWT_SECRET || 'ezdrink_secure_jwt_secret_dev');
+            userEmail = decoded.email;
+        } catch (err) {
+            return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });
+        }
 
         const { cart } = body;
 
@@ -16,6 +32,7 @@ export async function POST(req: Request) {
         const { data: order, error: orderError } = await supabase
             .from('orders')
             .insert([{
+                user_email: userEmail, // Valid email from token
                 total_amount: total,
                 status: 'pending_group',
                 items: cart,
