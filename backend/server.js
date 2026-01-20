@@ -581,12 +581,31 @@ app.post('/api/products', authenticateToken, upload.single('image'), async (req,
     // Upload to Supabase Storage
     const fileExt = path.extname(req.file.originalname);
     const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('products') // Accessing public bucket 'products'
+    // Attempt upload
+    let { data: uploadData, error: uploadError } = await supabase.storage
+      .from('products')
       .upload(fileName, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false
       });
+
+    // Handle Bucket Not Found (404) -> Auto-create
+    if (uploadError && (uploadError.statusCode === '404' || uploadError.message.includes('Bucket not found'))) {
+      console.log("Bucket 'products' not found. Creating...");
+      const { error: createError } = await supabase.storage.createBucket('products', { public: true });
+      if (createError) {
+        return res.status(500).json({ error: `Erro: Bucket 'products' inexistente e falha ao criar: ${createError.message}` });
+      }
+      // Retry upload after creation
+      const retry = await supabase.storage
+        .from('products')
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+      uploadData = retry.data;
+      uploadError = retry.error;
+    }
 
     if (uploadError) {
       console.error("Supabase Upload Error:", uploadError);
