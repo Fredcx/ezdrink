@@ -21,8 +21,20 @@ function PixPaymentContent() {
     const initialTime = 600; // 10 minutes
     const [timeLeft, setTimeLeft] = useState(initialTime);
 
-    const pixCode = searchParams.get('qr_code') || "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913Ez Drink Ltd6008Brasilia62070503***6304E2CA";
+    const pixCode = searchParams.get('qr_code');
     const ticket = searchParams.get('ticket');
+
+    // If we have a ticket but no QR code in params, we might need to fetch it (Future improvement)
+    // For now, if no QR code, show a placeholder or handle error.
+    // Ideally, we shouldn't redirect blindly.
+
+    // Check if we came from checkout
+    useEffect(() => {
+        if (!pixCode && !ticket) {
+            // Maybe redirect back if absolutely nothing is present
+            // router.push('/orders');
+        }
+    }, [pixCode, ticket, router]);
 
     useEffect(() => {
         const timer = setInterval(() => {

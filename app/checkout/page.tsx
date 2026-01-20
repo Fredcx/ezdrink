@@ -163,40 +163,37 @@ export default function CheckoutPage() {
                 console.error(error);
                 router.push(`/payment/error?method=balance`);
             }
-        } else if (selectedMethod === 'apple' || savedCards.find(c => c.id === selectedMethod)) {
-            if (selectedMethod === 'apple') {
-                router.push(`/payment/error?method=apple`);
-            } else {
-                // REAL CARD FLOW
-                try {
-                    const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-card`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
-                        },
-                        body: JSON.stringify({
-                            cart: items,
-                            card_id: selectedMethod
-                        })
-                    });
-                    const data = await res.json();
+        } else if (selectedMethod && selectedMethod !== 'cash' && selectedMethod !== 'pix' && selectedMethod !== 'balance') {
+            // REAL CARD FLOW (Saved or New Temporary ID)
+            try {
+                const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/orders/create-card`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
+                    },
+                    body: JSON.stringify({
+                        cart: items,
+                        card_id: selectedMethod
+                    })
+                });
+                const data = await res.json();
 
-                    if (data.success) {
-                        // Redirect to success/pending with balance flag
-                        router.push(`/payment/pending?ticket=${data.orderId}&total=${data.total}&success=true&type=order`);
-                    } else {
-                        // Redirect to error page with message
-                        const encodedError = encodeURIComponent(data.error || "Pagamento recusado");
-                        router.push(`/payment/error?method=card&error=${encodedError}`);
-                    }
-                } catch (err) {
-                    console.error(err);
-                    router.push(`/payment/error?method=card&error=Erro de Conexão`);
+                if (data.success) {
+                    // Redirect to success/pending with balance flag
+                    router.push(`/payment/pending?ticket=${data.orderId}&total=${data.total}&success=true&type=order`);
+                } else {
+                    // Redirect to error page with message
+                    const encodedError = encodeURIComponent(data.error || "Pagamento recusado");
+                    router.push(`/payment/error?method=card&error=${encodedError}`);
                 }
+            } catch (err) {
+                console.error(err);
+                router.push(`/payment/error?method=card&error=Erro de Conexão`);
             }
         } else {
-            alert("Fluxo indefinido");
+            console.error("Method not recognized:", selectedMethod);
+            alert("Fluxo indefinido par o método: " + selectedMethod);
         }
     };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Mail, KeyRound, Lock, ArrowRight, Loader2, User, FileText, ArrowLeft, RefreshCw } from "lucide-react";
@@ -24,12 +24,32 @@ export default function LoginPage() {
     const [name, setName] = useState("");
     const [cpf, setCpf] = useState("");
     const [phone, setPhone] = useState("");
+    // Timer for Resend
+    const [timeLeft, setTimeLeft] = useState(0);
+
+    // Timer Logic
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft]);
+
+
 
     const handleRequestOtp = async (targetStep: Step = 'OTP') => {
         if (!email.includes('@')) {
             setError("Digite um e-mail válido.");
             return;
         }
+
+        // Timer Check
+        if (timeLeft > 0) {
+            setError(`Aguarde ${timeLeft}s para reenviar.`);
+            return;
+        }
+
         setLoading(true);
         setError("");
 
@@ -37,12 +57,16 @@ export default function LoginPage() {
             const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/auth/otp/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                // If it's forgot password, we might want to validate CPF here?
+                // The backend currently only looks for email. 
+                // We'll update backend later to verify CPF if provided.
+                body: JSON.stringify({ email, cpf: cpf || undefined })
             });
             const data = await res.json();
 
             if (res.ok) {
                 setStep(targetStep);
+                setTimeLeft(60); // Start 60s timer
             } else {
                 setError(data.error || "Erro ao enviar código.");
             }
@@ -147,8 +171,39 @@ export default function LoginPage() {
     // --- Forgot Password Flow ---
 
     const handleForgotRequestOtp = async () => {
-        // Reuses handleRequestOtp logic but targets FORGOT_OTP step
-        handleRequestOtp('FORGOT_OTP');
+        if (!email.includes('@')) {
+            setError("Digite um e-mail válido.");
+            return;
+        }
+
+        // Timer Check
+        if (timeLeft > 0) {
+            setError(`Aguarde ${timeLeft}s para reenviar.`);
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/auth/otp/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, cpf })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setStep('FORGOT_OTP');
+                setTimeLeft(60);
+            } else {
+                setError(data.error || "Erro ao enviar código.");
+            }
+        } catch (e) {
+            setError("Erro de conexão.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleForgotVerifyOtp = async () => {
@@ -268,7 +323,17 @@ export default function LoginPage() {
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : "Verificar Código"}
                             </button>
-                            <button onClick={() => setStep('EMAIL')} className="w-full text-xs text-gray-500 hover:text-white">Voltar / Corrigir E-mail</button>
+
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    onClick={() => handleRequestOtp('OTP')}
+                                    disabled={loading || timeLeft > 0}
+                                    className="w-full text-xs text-gray-400 hover:text-white disabled:text-gray-600"
+                                >
+                                    {timeLeft > 0 ? `Reenviar código em ${timeLeft}s` : "Reenviar Código"}
+                                </button>
+                                <button onClick={() => setStep('EMAIL')} className="w-full text-xs text-gray-500 hover:text-white">Voltar / Corrigir E-mail</button>
+                            </div>
                         </div>
                     )}
 
@@ -307,23 +372,42 @@ export default function LoginPage() {
                                 <h3 className="font-bold text-lg">Recuperar Conta</h3>
                             </div>
 
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Confirme seu E-mail</label>
-                            <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="seu@email.com"
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium"
-                                />
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Confirme seu E-mail</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="seu@email.com"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Confirme seu CPF</label>
+                                    <div className="relative">
+                                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                                        <input
+                                            type="text"
+                                            value={cpf}
+                                            onChange={(e) => setCpf(formatCPF(e.target.value))}
+                                            placeholder="000.000.000-00"
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:bg-white/10 transition-all font-medium"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+
                             <button
                                 onClick={handleForgotRequestOtp}
-                                disabled={loading}
-                                className="w-full bg-white text-black font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 hover:bg-gray-200"
+                                disabled={loading || !email || cpf.length < 14} // CPF formatted length
+                                className="w-full bg-primary text-black font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 hover:brightness-110"
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : <>Enviar Código <RefreshCw className="w-4 h-4" /></>}
+                                {loading ? <Loader2 className="animate-spin" /> : <>Enviar Código <RefreshCw className="w-4 h-4 ml-1" /></>}
                             </button>
                         </div>
                     )}
@@ -350,6 +434,14 @@ export default function LoginPage() {
                                 className="w-full bg-white text-black font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : "Confirmar Código"}
+                            </button>
+
+                            <button
+                                onClick={handleForgotRequestOtp}
+                                disabled={loading || timeLeft > 0}
+                                className="w-full text-xs text-gray-400 hover:text-white disabled:text-gray-600"
+                            >
+                                {timeLeft > 0 ? `Reenviar código em ${timeLeft}s` : "Reenviar Código"}
                             </button>
                         </div>
                     )}

@@ -62,7 +62,7 @@ export default function SplitCreatePage() {
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 font-medium">Total com taxa</p>
-                            <h2 className="text-2xl font-bold">R$ {(total + 3.75).toFixed(2)}</h2>
+                            <h2 className="text-2xl font-bold">R$ {(total * 1.05).toFixed(2)}</h2>
                         </div>
                     </div>
                     <div className="bg-blue-50 p-4 rounded-xl flex items-center gap-3">
