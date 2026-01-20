@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
 
-        const { cart, totalMembers } = body;
+        const { cart } = body;
 
         // 1. Calculate totals
         const subtotal = cart.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
