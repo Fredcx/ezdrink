@@ -36,6 +36,7 @@ export default function OrdersPage() {
             });
             const data = await res.json();
 
+
             if (Array.isArray(data)) {
                 // Map backend fields to frontend interface
                 const mappedOrders = data.map((order: any) => ({
@@ -44,7 +45,10 @@ export default function OrdersPage() {
                     items: order.items || [],
                     total: parseFloat(order.total_amount || '0'),
                     date: new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
-                    status: order.status
+                    status: order.status,
+                    payment_method: order.payment_method,
+                    // If it came from group_orders join or logic 2 (memberOrders)
+                    group_order_id: order.group_orders?.[0]?.id || order.group_order_id
                 }));
                 setOrders(mappedOrders);
             }
@@ -57,7 +61,7 @@ export default function OrdersPage() {
 
     const displayedOrders = orders.filter(o =>
         activeTab === 'active'
-            ? (o.status === 'pending_payment' || o.status === 'ready')
+            ? (o.status === 'pending_payment' || o.status === 'ready' || o.status === 'pending_group')
             : (o.status === 'completed' || o.status === 'cancelled')
     );
 
@@ -119,7 +123,7 @@ export default function OrdersPage() {
                                 <p className="font-bold text-gray-400 text-lg">Você não possui pedidos {activeTab === 'active' ? 'ativos' : 'finalizados'}.</p>
                             </div>
                         ) : (
-                            displayedOrders.map((order) => (
+                            displayedOrders.map((order: any) => (
                                 <motion.div
                                     key={order.id}
                                     initial={{ opacity: 0, y: 10 }}
@@ -150,10 +154,17 @@ export default function OrdersPage() {
                                                 </h3>
                                                 <div className="flex flex-col gap-1 mt-1">
                                                     <p className="text-xs text-gray-400 font-medium">{order.date}</p>
+
                                                     {order.status === 'pending_payment' && (
                                                         <div className="flex items-center gap-1 text-red-500">
                                                             <AlertCircle className="w-3 h-3" />
                                                             <span className="text-xs font-bold">Pagamento pendente</span>
+                                                        </div>
+                                                    )}
+                                                    {order.status === 'pending_group' && (
+                                                        <div className="flex items-center gap-1 text-blue-500">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            <span className="text-xs font-bold">Dividindo Conta</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -170,7 +181,14 @@ export default function OrdersPage() {
 
                                     <div className="flex justify-end">
                                         {activeTab === 'active' ? (
-                                            order.status === 'pending_payment' ? (
+                                            order.status === 'pending_group' && order.group_order_id ? (
+                                                <button
+                                                    onClick={() => router.push(`/split/${order.group_order_id}`)}
+                                                    className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-colors shadow-sm"
+                                                >
+                                                    Ver Divisão
+                                                </button>
+                                            ) : order.status === 'pending_payment' ? (
                                                 <button
                                                     onClick={() => router.push('/payment/pix')}
                                                     className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-colors shadow-sm"
