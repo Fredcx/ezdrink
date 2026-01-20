@@ -2,34 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Plus, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 
 export default function SplitCreatePage() {
     const router = useRouter();
     const { items, total } = useCart();
-    const [emails, setEmails] = useState<string[]>([]);
-    const [currentEmail, setCurrentEmail] = useState("");
+    const [participantCount, setParticipantCount] = useState(2);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleAddEmail = () => {
-        if (currentEmail && currentEmail.includes("@") && !emails.includes(currentEmail)) {
-            setEmails([...emails, currentEmail]);
-            setCurrentEmail("");
-        }
-    };
-
-    const handleRemoveEmail = (email: string) => {
-        setEmails(emails.filter(e => e !== email));
-    };
-
     const handleCreateSplit = async () => {
-        if (emails.length === 0) {
-            alert("Adicione pelo menos um amigo para dividir.");
-            return;
-        }
-
         setIsLoading(true);
         try {
             const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/group-orders`, {
@@ -38,7 +21,7 @@ export default function SplitCreatePage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
                 },
-                body: JSON.stringify({ cart: items, members: emails.map(e => ({ email: e })) })
+                body: JSON.stringify({ cart: items, totalMembers: participantCount })
             });
             const data = await res.json();
 
@@ -55,8 +38,7 @@ export default function SplitCreatePage() {
         }
     };
 
-    const totalMembers = emails.length + 1; // +1 is you
-    const shareValue = ((total + 3.75) / totalMembers).toFixed(2);
+    const shareValue = ((total + 3.75) / participantCount).toFixed(2);
 
     return (
         <div className="min-h-screen bg-[#f4f4f5] font-sans flex flex-col">
@@ -86,67 +68,50 @@ export default function SplitCreatePage() {
                     </div>
                     <div className="h-px bg-gray-100 my-2" />
                     <div className="flex justify-between items-center mt-2">
-                        <span className="text-gray-600 font-medium">Sua parte ({totalMembers} pessoas)</span>
+                        <span className="text-gray-600 font-medium">Sua parte ({participantCount} pessoas)</span>
                         <span className="text-primary font-bold text-lg">~ R$ {shareValue}</span>
                     </div>
                 </div>
 
-                {/* Invite Form */}
-                <div className="mb-6">
-                    <label className="text-sm font-bold text-gray-700 mb-2 block">Convidar amigos por e-mail</label>
-                    <div className="flex gap-2">
-                        <input
-                            type="email"
-                            value={currentEmail}
-                            onChange={(e) => setCurrentEmail(e.target.value)}
-                            placeholder="amigo@email.com"
-                            className="flex-1 p-4 rounded-xl border border-gray-200 focus:outline-none focus:border-black"
-                        />
+
+                {/* Count Selection */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                    <label className="text-sm font-bold text-gray-700 mb-4 block">Quantas pessoas vão dividir?</label>
+
+                    <div className="flex items-center justify-between mb-8">
                         <button
-                            onClick={handleAddEmail}
-                            className="bg-black text-white px-4 rounded-xl hover:bg-black/80 transition-colors"
+                            onClick={() => setParticipantCount(Math.max(2, participantCount - 1))}
+                            className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl font-bold hover:bg-gray-200"
                         >
-                            <Plus className="w-6 h-6" />
+                            -
                         </button>
+                        <div className="flex flex-col items-center">
+                            <span className="text-4xl font-extrabold text-primary">{participantCount}</span>
+                            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Pessoas</span>
+                        </div>
+                        <button
+                            onClick={() => setParticipantCount(participantCount + 1)}
+                            className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl font-bold hover:bg-gray-200"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-xl flex items-center gap-3">
+                        <Users className="w-5 h-5 text-blue-600" />
+                        <p className="text-sm text-blue-800 font-medium">
+                            Você + {participantCount - 1} amigos
+                        </p>
                     </div>
                 </div>
 
-                {/* List */}
-                <div className="flex-1 overflow-y-auto space-y-3 mb-6">
-                    {emails.length === 0 && (
-                        <div className="text-center text-gray-400 py-8 text-sm">
-                            Nenhum amigo adicionado ainda.
-                        </div>
-                    )}
-                    {emails.map((email) => (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            key={email}
-                            className="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <Mail className="w-4 h-4 text-gray-500" />
-                                </div>
-                                <span className="font-medium text-sm text-gray-700">{email}</span>
-                            </div>
-                            <button
-                                onClick={() => handleRemoveEmail(email)}
-                                className="text-red-400 hover:text-red-600 p-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </motion.div>
-                    ))}
-                </div>
 
                 <button
-                    disabled={emails.length === 0 || isLoading}
+                    disabled={isLoading}
                     onClick={handleCreateSplit}
                     className="w-full bg-primary text-primary-foreground font-bold text-lg py-4 rounded-xl hover:brightness-110 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isLoading ? "Criando Grupo..." : "Confirmar e Enviar Convites"}
+                    {isLoading ? "Criando Grupo..." : "Gerar QR Code de Pagamento"}
                 </button>
 
             </main>
