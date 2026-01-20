@@ -1,4 +1,4 @@
-import { Beer, Sandwich, Wine, Package } from "lucide-react";
+import { Beer, Sandwich, Wine, Package, Pizza, Coffee, IceCream, Utensils, GlassWater } from "lucide-react";
 
 
 
@@ -14,6 +14,21 @@ interface CategoryMenuProps {
     onSelect: (id: number | null) => void;
 }
 
+const ICON_MAP: Record<string, any> = {
+    "Beer": Beer,
+    "Wine": Wine,
+    "Sandwich": Sandwich,
+    "Package": Package,
+    "Pizza": Pizza,
+    "Coffee": Coffee,
+    "IceCream": IceCream,
+    "Utensils": Utensils,
+    "GlassWater": GlassWater,
+    "Cerveja": Beer, // Pt-br alias
+    "Vinho": Wine,
+    "Lanche": Sandwich
+};
+
 export function CategoryMenu({ categories, selectedId, onSelect }: CategoryMenuProps) {
     return (
         <div className="py-4">
@@ -22,7 +37,18 @@ export function CategoryMenu({ categories, selectedId, onSelect }: CategoryMenuP
             <div className="flex gap-4 overflow-x-auto px-6 pb-6 pt-2 scrollbar-hide">
                 {categories.map((cat) => {
                     const isActive = (cat.id === 0 && !selectedId) || (cat.id === selectedId);
-                    const isUrl = cat.icon.startsWith("http");
+                    const isUrl = cat.icon?.startsWith("http");
+
+                    // Resolve Icon Component
+                    // If cat.icon matches a key in ICON_MAP, use it.
+                    // Otherwise check for known keywords or custom.
+                    // If cat.icon is just an emoji or text, render as text.
+                    // But user specifically wants the OLD look, which was Lucide icons.
+                    // We can try to dynamically match or default to Package if it looks like a component name.
+                    let IconComponent = ICON_MAP[cat.icon] || Package;
+
+                    // If it's short (emoji) or url, we don't use IconComponent
+                    const isEmoji = !isUrl && cat.icon && cat.icon.length <= 4 && !ICON_MAP[cat.icon];
 
                     return (
                         <button
@@ -35,10 +61,13 @@ export function CategoryMenu({ categories, selectedId, onSelect }: CategoryMenuP
                         >
                             {isUrl ? (
                                 <img src={cat.icon} alt="" className="w-7 h-7 mb-2 object-contain" />
+                            ) : isEmoji ? (
+                                <span className="text-2xl mb-2 leading-none">{cat.icon}</span>
                             ) : (
-                                <span className="text-2xl mb-2 leading-none">{cat.icon || "📦"}</span>
+                                // Render Lucide Icon
+                                <IconComponent className={`w-7 h-7 mb-2 ${isActive ? "stroke-[2.5px]" : "stroke-[2px]"}`} />
                             )}
-                            <span className="text-[11px] font-semibold tracking-wide">{cat.name}</span>
+                            <span className="text-xs font-semibold tracking-wide truncate w-full px-1">{cat.name}</span>
                         </button>
                     )
                 })}
