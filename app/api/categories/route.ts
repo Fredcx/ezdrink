@@ -55,7 +55,10 @@ export async function POST(req: Request) {
 
         // Check if variable exists at all
         if (!supabaseServiceKey) {
-            throw new Error("Missing Env Var: SUPABASE_SERVICE_ROLE_KEY is undefined on the server. Please check .env.local or Vercel Settings.");
+            const availableKeys = Object.keys(process.env)
+                .filter(k => k.startsWith('SUPABASE') || k.startsWith('NEXT_PUBLIC_SUPABASE'))
+                .join(', ');
+            throw new Error(`Missing Env Var: SUPABASE_SERVICE_ROLE_KEY is undefined. Available keys on server: [${availableKeys}]. Check Vercel Settings > Environment Variables.`);
         }
 
         // Check if variable is valid (Service Role)
