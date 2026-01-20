@@ -27,7 +27,14 @@ export default function AdminDashboard() {
         }
     }, [isAuthLoading, isAuthenticated, router]);
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchData();
+        }
+    }, [isAuthenticated]); // Run only when auth confirms
+
     // Strict Loading State: Don't render dashboard until auth is confirmed
+    // IMPORTANT: This return must be AFTER all hooks
     if (isAuthLoading || !isAuthenticated) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -35,10 +42,6 @@ export default function AdminDashboard() {
             </div>
         );
     }
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const fetchData = async () => {
         try {

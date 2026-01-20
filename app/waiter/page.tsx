@@ -16,26 +16,6 @@ export default function WaiterDashboard() {
     const [loading, setLoading] = useState(true);
     const [waiterName, setWaiterName] = useState("Equipe");
 
-    useEffect(() => {
-        // Protect Route
-        if (!isAuthLoading && !isAuthenticated) {
-            router.push('/login'); // Or specific waiter login if needed
-        } else if (isAuthenticated) {
-            // In real app, decode token to get name
-            setWaiterName("Garçom");
-            fetchMyValidations();
-        }
-    }, [isAuthLoading, isAuthenticated, router]);
-
-    // Strict Loading State: Don't render dashboard until auth is confirmed
-    if (isAuthLoading || !isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
-
     const fetchMyValidations = async () => {
         try {
             // This endpoint needs to be created or mocked
@@ -56,10 +36,31 @@ export default function WaiterDashboard() {
         }
     };
 
+    useEffect(() => {
+        // Protect Route
+        if (!isAuthLoading && !isAuthenticated) {
+            router.push('/login'); // Or specific waiter login if needed
+        } else if (isAuthenticated) {
+            // In real app, decode token to get name
+            setWaiterName("Garçom");
+            fetchMyValidations();
+        }
+    }, [isAuthLoading, isAuthenticated, router]);
+
     const handleLogout = () => {
         localStorage.removeItem('ezdrink_token');
         router.push('/waiter/login');
     };
+
+    // Strict Loading State: Don't render dashboard until auth is confirmed
+    // RETURN AFTER ALL HOOKS
+    if (isAuthLoading || !isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#f4f4f5] pb-20">
