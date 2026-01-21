@@ -625,19 +625,9 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
     // 1. Fetch Orders to aggregates
     const { data: orders, error } = await supabase
       .from('orders')
-      .select(`
-                id,
-                created_at,
-                total_amount,
-                status,
-                payment_method,
-                items:order_items (
-                    name,
-                    quantity,
-                    price
-                )
-            `)
-      .neq('status', 'cancelled'); // Exclude cancelled
+      .select('id, created_at, total_amount, status, payment_method, items, ticket_code, user_email')
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
@@ -705,7 +695,8 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
       countByHour,
       paymentStats,
       totalOrders,
-      topProductByHour
+      topProductByHour,
+      recentOrders: orders.slice(0, 10)
     });
 
   } catch (err) {
