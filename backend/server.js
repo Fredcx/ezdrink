@@ -599,6 +599,121 @@ app.post('/api/establishment/team/generate', authenticateToken, async (req, res)
   });
 });
 
+// ==================== USER DATA ROUTE (Fixes Login Loop) ====================
+app.get('/api/users/me', authenticateToken, async (req, res) => {
+  // Return the user data decoded from token + any extra DB info if needed
+  // Assuming token has id, email, type, role
+
+  // Optional: Refresh from DB to get latest status
+  const { data: user, error } = await supabase.from('users').select('*').eq('id', req.user.id).single();
+
+  if (error || !user) {
+    // If user deleted from DB but has token, return 401
+    return res.status(401).json({ error: 'User not found' });
+  }
+
+  res.json(user);
+});
+
+// ==================== ADMIN DASHBOARD STATS ====================
+app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
+  if (req.user.user_type !== 'admin' && req.user.establishment_role !== 'manager') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  try {
+    // 1. Fetch Orders to aggregates
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select(`
+                id,
+                created_at,
+                total_amount,
+                status,
+                payment_method,
+                items:order_items (
+                    name,
+                    quantity,
+                    price
+                )
+            `)
+      .neq('status', 'cancelled'); // Exclude cancelled
+
+    if (error) throw error;
+
+    // --- Aggregation Logic ---
+
+    // A. Sales by Hour
+    const salesByHour = Array(24).fill(0);
+    const countByHour = Array(24).fill(0);
+
+    // B. Product by Hour (Which product sells most at each hour)
+    const productsByHour = {}; // { "10": { "Beer": 5, "Fries": 2 } }
+
+    // C. Payment Conversion
+    const paymentStats = {
+      credit_card: 0,
+      pix: 0,
+      cash: 0 // boleto usually not used in events, maybe 'cash' or other
+    };
+    let totalOrders = 0;
+
+    orders.forEach(order => {
+      const date = new Date(order.created_at);
+      // Adjust to UTC-3 (Brazil) roughly or keep UTC depending on server. 
+      // Better to rely on local time. Let's use getHours() which uses server local.
+      // Ideally we should handle timezone properly, but MVP:
+      let hour = date.getHours();
+      // Fix timezone offset manually if server is UTC (likely Vercel is UTC)
+      // Brazil is UTC-3. 
+      hour = (hour - 3 + 24) % 24;
+
+      salesByHour[hour] += (order.total_amount || 0);
+      countByHour[hour] += 1;
+
+      // Payment
+      if (order.status === 'paid' || order.status === 'completed') {
+        totalOrders++;
+        if (order.payment_method === 'credit_card') paymentStats.credit_card++;
+        else if (order.payment_method === 'pix') paymentStats.pix++;
+        else paymentStats.cash++;
+      }
+
+      // Products
+      if (order.items && order.items.length > 0) {
+        if (!productsByHour[hour]) productsByHour[hour] = {};
+        order.items.forEach(item => {
+          const name = item.name;
+          productsByHour[hour][name] = (productsByHour[hour][name] || 0) + (item.quantity || 1);
+        });
+      }
+    });
+
+    // Resolve Top Product per Hour
+    const topProductByHour = Array(24).fill(null);
+    for (let h = 0; h < 24; h++) {
+      if (productsByHour[h]) {
+        const sorted = Object.entries(productsByHour[h]).sort((a, b) => b[1] - a[1]);
+        if (sorted.length > 0) {
+          topProductByHour[h] = { name: sorted[0][0], count: sorted[0][1] };
+        }
+      }
+    }
+
+    res.json({
+      salesByHour,
+      countByHour,
+      paymentStats,
+      totalOrders,
+      topProductByHour
+    });
+
+  } catch (err) {
+    console.error("Dashboard Stats Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/establishment/team/:id', authenticateToken, async (req, res) => {
   if (!['establishment', 'admin'].includes(req.user.user_type)) {
     return res.status(403).json({ error: 'Acesso negado' });
