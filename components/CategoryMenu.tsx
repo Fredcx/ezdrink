@@ -1,4 +1,4 @@
-import { Beer, Sandwich, Wine, Package, Pizza, Coffee, IceCream, Utensils, GlassWater } from "lucide-react";
+import { Beer, Sandwich, Wine, Package, Pizza, Coffee, IceCream, Utensils, GlassWater, LayoutGrid } from "lucide-react";
 
 
 
@@ -24,6 +24,7 @@ const ICON_MAP: Record<string, any> = {
     "IceCream": IceCream,
     "Utensils": Utensils,
     "GlassWater": GlassWater,
+    "LayoutGrid": LayoutGrid,
     "Cerveja": Beer, // Pt-br alias
     "Vinho": Wine,
     "Lanche": Sandwich
