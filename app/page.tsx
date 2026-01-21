@@ -141,23 +141,7 @@ export default function Home() {
                       return (
                         <div key={cat.id} className="mb-8 last:mb-0">
                           <h3 className="text-lg font-bold mb-3 text-gray-800 flex items-center gap-2">
-                            {/* Icon Rendering Logic */}
-                            {cat.icon.startsWith('http') ? (
-                              <img src={cat.icon} className="w-5 h-5 object-contain" alt="" />
-                            ) : (
-                              // If it's a Lucide Icon Key (e.g. "Beer"), render the component or nothing if too lazy, but let's render it.
-                              // We need to import the icons first. I'll rely on the existing imports (lines 3-14 don't import icons yet). 
-                              // Actually, page.tsx doesn't import Lucide icons.
-                              // To be safe and simple: If the icon text is > 2 chars and not http, it's likely a key. 
-                              // The user wants to avoid "Beer Beer". 
-                              // If I can't easily import the icon map, I will just render a generic icon or nothing if it looks like a key.
-                              // But better: let's just render it if it's short (emoji).
-                              cat.icon && cat.icon.length <= 4 ? <span>{cat.icon}</span> : <span className="w-5 h-5 block bg-primary/20 rounded-full" />
-                            )}
                             {cat.name}
-                            <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                              {catProducts.length}
-                            </span>
                           </h3>
                           <div className="grid grid-cols-1 gap-4">
                             {catProducts.map((product) => (
