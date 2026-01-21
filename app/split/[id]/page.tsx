@@ -15,10 +15,36 @@ interface Member {
 interface GroupOrder {
     id: string;
     total_amount: number;
-    status: 'pending' | 'completed';
+    status: 'pending' | 'completed' | 'cancelled';
     created_by: string;
+    created_at: string;
     order_id: number;
     group_order_members: Member[];
+}
+
+function CountDownTimer({ createdAt }: { createdAt: string }) {
+    const [timeLeft, setTimeLeft] = useState("");
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const created = new Date(createdAt).getTime();
+            const now = Date.now();
+            const expiresAt = created + (15 * 60 * 1000); // 15 minutes
+            const diff = expiresAt - now;
+
+            if (diff <= 0) {
+                setTimeLeft("00:00");
+                clearInterval(interval);
+            } else {
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [createdAt]);
+
+    return <span className="text-xs font-bold text-red-500 mt-1">Expira em: {timeLeft}</span>;
 }
 
 export default function SplitLobbyPage() {
@@ -100,7 +126,7 @@ export default function SplitLobbyPage() {
             <div className="bg-[#f4f4f5] w-full h-[calc(100vh-24px)] rounded-t-[40px] shadow-2xl overflow-hidden flex flex-col">
                 <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-10 bg-[#f4f4f5]/90 backdrop-blur-md">
                     <button
-                        onClick={() => router.push('/cart')}
+                        onClick={() => router.push('/orders')}
                         className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6" />
@@ -113,25 +139,35 @@ export default function SplitLobbyPage() {
 
                 <main className="flex-1 px-6 pb-32 overflow-y-auto scrollbar-hide flex flex-col items-center">
 
-                    {/* Financial Progress */}
-                    <div className="mb-8 mt-4 relative">
+                    {/* Financial Progress & Timer */}
+                    <div className="mb-6 mt-4 relative">
                         <svg className="w-48 h-48 transform -rotate-90">
                             <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="16" fill="transparent" className="text-gray-200" />
                             <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="16" fill="transparent"
                                 strokeDasharray={552} strokeDashoffset={552 - (552 * progress) / 100}
-                                className="text-primary transition-all duration-1000 ease-out"
+                                className={`${groupOrder.status === 'cancelled' ? 'text-red-500' : 'text-primary'} transition-all duration-1000 ease-out`}
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                            <span className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Restam</span>
-                            <span className="text-3xl font-black text-gray-800">R$ {remaining > 0 ? remaining.toFixed(2) : "0.00"}</span>
-                            <span className="text-xs font-bold text-gray-400 mt-1">Total: R$ {totalNeeded.toFixed(2)}</span>
+                            {groupOrder.status === 'cancelled' ? (
+                                <>
+                                    <span className="text-sm text-red-500 font-bold uppercase tracking-wider mb-1">Cancelado</span>
+                                    <span className="text-xl font-black text-gray-800">Tempo Esgotado</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-1">Restam</span>
+                                    <span className="text-3xl font-black text-gray-800">R$ {remaining > 0 ? remaining.toFixed(2) : "0.00"}</span>
+                                    <CountDownTimer createdAt={groupOrder.created_at} />
+                                </>
+                            )}
                         </div>
                     </div>
 
                     {!isCompleted && (
                         <div className="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col items-center w-full max-w-sm mb-8">
-                            <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-widest">Escaneie para Pagar</h3>
+                            <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-widest text-center">QR Code para Dividir</h3>
+                            <p className="text-xs text-center text-gray-400 mb-2">Compartilhe este código para que seus amigos paguem.</p>
                             <div className="bg-white p-2 rounded-xl">
                                 <QRCode value={payLink} size={160} />
                             </div>
@@ -176,12 +212,25 @@ export default function SplitLobbyPage() {
                     </div>
 
                     {!isCompleted && (
-                        <button
-                            onClick={() => router.push(`/pay-split/${id}`)}
-                            className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-md hover:brightness-110 mb-8 active:scale-95 transition-all"
-                        >
-                            Pagar uma parte
-                        </button>
+                        <>
+                            <button
+                                onClick={() => router.push(`/pay-split/${id}`)}
+                                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-xl shadow-md hover:brightness-110 mb-4 active:scale-95 transition-all"
+                            >
+                                Pagar uma parte
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirm("Tem certeza que deseja cancelar esta divisão?")) {
+                                        // TODO: Call API to cancel group order
+                                        router.push('/orders');
+                                    }
+                                }}
+                                className="w-full bg-red-100 text-red-600 font-bold py-4 rounded-xl shadow-sm hover:bg-red-200 mb-8 active:scale-95 transition-all"
+                            >
+                                Cancelar Grupo
+                            </button>
+                        </>
                     )}
 
                     {isCompleted && (

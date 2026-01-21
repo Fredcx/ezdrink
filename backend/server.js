@@ -1061,15 +1061,7 @@ app.post('/api/orders/create-pix', authenticateToken, async (req, res) => {
 
   } catch (err) {
     console.error("Pix Order Error:", err);
-    // Fallback for mocked environment if Pagar.me fails
-    // Remove this in pure production if strictness is required
-    res.json({
-      success: true,
-      orderId: "PIX-TEST-" + Math.floor(1000 + Math.random() * 9000),
-      total,
-      qr_code: "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426614174000520400005303986540510.005802BR5913Ez Drink Ltd6008Brasilia62070503***6304E2CA", // Mock Code
-      is_mock: true
-    });
+    res.status(500).json({ error: 'Erro ao criar Pix. Verifique a chave de API ou os dados do cliente.' });
   }
 });
 
@@ -1275,12 +1267,29 @@ app.post('/api/group-orders/:id/pay', async (req, res) => {
 app.get('/api/group-orders/:id', async (req, res) => {
   const { data: group, error } = await supabase.from('group_orders').select('*, group_order_members(*)').eq('id', req.params.id).single();
   if (error) return res.status(404).json({ error: 'Grupo não encontrado' });
+
+  // 15-Minute Expiration Logic
+  if (group.status === 'pending') {
+    const created = new Date(group.created_at).getTime();
+    const now = Date.now();
+    const diffMinutes = (now - created) / 1000 / 60;
+
+    if (diffMinutes > 15) {
+      // Expired! Cancel it.
+      await supabase.from('group_orders').update({ status: 'cancelled' }).eq('id', group.id);
+      group.status = 'cancelled'; // Return updated status
+
+      // Also cancel the main order if needed?
+      // For now just cancel the group lobby.
+    }
+  }
+
   res.json(group);
 });
 
 // List Orders
 app.get('/api/orders', authenticateToken, async (req, res) => {
-  let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+  let query = supabase.from('orders').select('*, group_orders(*)').order('created_at', { ascending: false });
 
   // Filter for normal users (non-staff)
   const isStaff = ['waiter', 'barman', 'manager', 'admin', 'superadmin'].includes(req.user.establishment_role);
