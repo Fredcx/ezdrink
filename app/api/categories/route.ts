@@ -82,8 +82,19 @@ export async function POST(req: Request) {
 
         return NextResponse.json(data);
     } catch (error: any) {
-        console.error("API Error:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("API Error (Full):", error);
+        // Combine message, details, and hint to ensure the user sees something useful
+        const errorMessage = [
+            error.message,
+            error.details,
+            error.hint,
+            error.code ? `Code: ${error.code}` : null
+        ].filter(Boolean).join(" | ");
+
+        return NextResponse.json({
+            error: errorMessage || "Unknown Supabase Error (Empty Response)",
+            fullError: error
+        }, { status: 500 });
     }
 }
 
