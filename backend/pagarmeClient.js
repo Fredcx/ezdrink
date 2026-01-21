@@ -1,25 +1,17 @@
-const axios = require('axios');
-
-// API Configuration
-// NOTE: Replace keys with real process.env variables in production
-// Fallback to test key for debugging
-// Fallback to test key for debugging
 const API_KEY = (process.env.PAGARME_API_KEY || '').trim();
 const BASE_URL = 'https://api.pagar.me/core/v5';
 
-console.log("Pagar.me Client Initialized. Key Length:", API_KEY.length, "Prefix:", API_KEY.substring(0, 4));
+console.log("Pagar.me Client Initialized (Fetch Version). Key Length:", API_KEY.length, "Prefix:", API_KEY.substring(0, 4));
 
-const api = axios.create({
-    baseURL: BASE_URL,
-    headers: {
-        'Authorization': `Basic ${Buffer.from(API_KEY + ':').toString('base64')}`,
-        'Content-Type': 'application/json',
-    }
-});
+/**
+ * Helper for Base64 encoding in Node.js
+ */
+const getAuthHeader = () => {
+    return `Basic ${Buffer.from(API_KEY + ':').toString('base64')}`;
+};
 
 /**
  * Formats amount to cents (integer)
- * @param {number} amount 
  */
 function toCents(amount) {
     return Math.round(amount * 100);
@@ -41,10 +33,50 @@ function generateCPF() {
     return `${n.join('')}${d1}${d2}`;
 }
 
+/**
+ * Native Fetch Wrapper for Pagar.me
+ */
+async function pagarmeFetch(endpoint, method = 'GET', body = null) {
+    const url = `${BASE_URL}${endpoint}`;
+    const headers = {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json',
+        'User-Agent': 'EzDrink/1.0' // Explicit UA sometimes helps
+    };
+
+    const config = {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+    };
+
+    console.log(`[Pagarme] ${method} ${url}`);
+
+    const res = await fetch(url, config);
+
+    // Handle non-2xx responses
+    if (!res.ok) {
+        const errorText = await res.text();
+        let errorData;
+        try {
+            errorData = JSON.parse(errorText);
+        } catch (e) {
+            errorData = { message: errorText };
+        }
+
+        console.error('Pagar.me Error:', JSON.stringify(errorData, null, 2));
+
+        const msg = errorData.message || 'Erro Pagar.me';
+        const details = errorData.errors ? JSON.stringify(errorData.errors) : '';
+        throw new Error(`${msg} ${details}`);
+    }
+
+    return await res.json();
+}
+
 const PagarmeClient = {
     /**
      * Create a new order (Pixel or Card)
-     * @param {object} data - Order data
      */
     async createOrder(data) {
         try {
@@ -55,19 +87,19 @@ const PagarmeClient = {
                 payment_method, // 'credit_card' or 'pix'
                 card_token,
                 card_id,
-                save_card = false
             } = data;
 
             // Generate fallback CPF if needed
-            const finalCpf = (customer && customer.document) ? customer.document :
-                ((data.card_raw && data.card_raw.cpf) ? data.card_raw.cpf : generateCPF());
+            const finalCpf = (customer && customer.document && customer.document.length > 5)
+                ? customer.document
+                : ((data.card_raw && data.card_raw.cpf) ? data.card_raw.cpf : generateCPF());
 
             const payload = {
                 customer: {
                     name: customer.name,
                     email: customer.email || `test_${Date.now()}@ezdrink.com`,
                     type: 'individual',
-                    document: (customer.document && customer.document.length > 5) ? customer.document : generateCPF(),
+                    document: finalCpf,
                     phones: {
                         mobile_phone: {
                             country_code: '55',
@@ -132,7 +164,6 @@ const PagarmeClient = {
                 } else if (card_token) {
                     cardPayment.card_token = card_token;
                 } else if (data.card_raw) {
-                    // Support raw card data
                     const billingAddress = (data.card_raw.billing) ? data.card_raw.billing : {
                         line_1: 'Rua de Teste, 123',
                         zip_code: '01001000',
@@ -149,8 +180,6 @@ const PagarmeClient = {
                         cvv: data.card_raw.cvv,
                         billing_address: billingAddress
                     };
-
-                    // Also set top-level billing address in credit_card object for robust V5 compliance
                     cardPayment.billing_address = billingAddress;
                 }
 
@@ -162,29 +191,25 @@ const PagarmeClient = {
                 };
             }
 
-            console.log("PAYLOAD BEING SENT TO PAGAR.ME:", JSON.stringify(payload, null, 2));
-
-            const response = await api.post('/orders', payload);
-            return response.data;
+            // Execute Request
+            return await pagarmeFetch('/orders', 'POST', payload);
 
         } catch (error) {
-            console.error('Pagar.me Error Full:', JSON.stringify(error.response ? error.response.data : error.message, null, 2));
-            const msg = error.response?.data?.message || error.message || 'Erro ao processar pagamento no Pagar.me';
-            const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
-            throw new Error(`${msg} ${details}`);
+            console.error('Create Order Error:', error.message);
+            throw error;
         }
     },
 
     /**
      * Find or Create a Customer in Pagar.me
-     * Helper method to ensure we have a customerID to save cards to.
      */
     async findOrCreateCustomer(name, email, document, phones) {
         try {
             // 1. Try to find by email
-            const searchRes = await api.get('/customers', { params: { email: email } });
-            if (searchRes.data && searchRes.data.data && searchRes.data.data.length > 0) {
-                return searchRes.data.data[0];
+            const searchRes = await pagarmeFetch(`/customers?email=${encodeURIComponent(email)}`, 'GET');
+
+            if (searchRes.data && searchRes.data.length > 0) {
+                return searchRes.data[0];
             }
 
             // 2. If not found, create new
@@ -201,24 +226,17 @@ const PagarmeClient = {
                     }
                 }
             };
-            const createRes = await api.post('/customers', payload);
-            return createRes.data;
+            return await pagarmeFetch('/customers', 'POST', payload);
 
         } catch (error) {
             console.error("Error finding/creating customer:", error.message);
-            // If creation fails (e.g. document already exists but email didn't match?), 
-            // we could try finding by document. For now, strictly re-throw or handle.
-            if (error.response?.data?.message?.includes("already exists")) {
-                // Try loose logic or just fail?
-                // Let's assume user is consistent.
-            }
+            // If creation fails because it exists, we might need better handling
             throw error;
         }
     },
 
     /**
-     * Save Card to Pagar.me (Create Card on Customer)
-     * @param {object} cardData - { number, holder_name, exp_month, exp_year, cvv, holder_document, billing_address, email }
+     * Save Card to Pagar.me
      */
     async saveCard(cardData) {
         try {
@@ -231,21 +249,16 @@ const PagarmeClient = {
                 country: 'BR'
             };
 
-            // 1. Get Customer ID
-            console.log("Saving card, first finding customer...", cardData.email);
-            // Use provided email or fallback to generated one (bad practice but avoids crash if missing)
             const email = cardData.email || `guest_${Date.now()}@ezdrink.com`;
 
-            // We need a customer to save the card to in V5
+            // 1. Get Customer ID
             const customer = await this.findOrCreateCustomer(
                 cardData.holder_name,
                 email,
                 finalDoc
             );
 
-            console.log("Customer found/created:", customer.id);
-
-            // 2. Create Card for this Customer
+            // 2. Create Card
             const payload = {
                 number: cardData.number,
                 holder_name: cardData.holder_name,
@@ -255,25 +268,11 @@ const PagarmeClient = {
                 billing_address: finalAddr
             };
 
-            console.log("Creating card for customer...", payload);
-            const response = await api.post(`/customers/${customer.id}/cards`, payload);
-
-            return response.data; // Returns the card object with 'id'
+            return await pagarmeFetch(`/customers/${customer.id}/cards`, 'POST', payload);
 
         } catch (error) {
-            console.error('Pagar.me Save Card Error:', error.response ? error.response.data : error.message);
-
-            const rawErrorMessage = error.message || 'Unknown network error';
-            const msg = error.response?.data?.message || rawErrorMessage;
-            const details = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
-
-            const err = new Error(`${msg} ${details}`);
-            err.response = {
-                status: error.response?.status || 500,
-                data: error.response?.data || { error: rawErrorMessage }
-            };
-
-            throw err;
+            console.error('Save Card Error:', error.message);
+            throw error;
         }
     }
 };
