@@ -51,16 +51,12 @@ export default function AdminCategoriesPage() {
 
     const fetchCategories = async () => {
         try {
-            const { data, error } = await supabase
-                .from('categories')
-                .select('*')
-                .order('order_index', { ascending: true });
-
-            if (error) throw error;
+            const res = await fetch('/api/menu-categories');
+            if (!res.ok) throw new Error("Failed to fetch");
+            const data = await res.json();
             setCategories(data || []);
         } catch (error) {
             console.error("Error fetching categories:", error);
-            // alert("Erro ao carregar categorias."); 
         } finally {
             setIsLoading(false);
         }
@@ -70,8 +66,7 @@ export default function AdminCategoriesPage() {
         if (!newCategoryName.trim()) return;
         setIsSaving(true);
         try {
-            // Use API Route instead of direct Supabase due to Token Mismatch
-            const res = await fetch('/api/categories', {
+            const res = await fetch('/api/menu-categories', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -103,7 +98,7 @@ export default function AdminCategoriesPage() {
     const handleDeleteCategory = async (id: number) => {
         if (!confirm("Tem certeza? Produtos nesta categoria podem ficar ocultos.")) return;
         try {
-            const res = await fetch(`/api/categories?id=${id}`, {
+            const res = await fetch(`/api/menu-categories?id=${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('ezdrink_token')}`
@@ -185,8 +180,8 @@ export default function AdminCategoriesPage() {
                                             key={iconName}
                                             onClick={() => setNewCategoryIcon(iconName)}
                                             className={`h-12 rounded-xl flex items-center justify-center border transition-all ${newCategoryIcon === iconName
-                                                    ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
-                                                    : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
+                                                ? "bg-gray-100 text-primary border-primary shadow-sm ring-1 ring-primary"
+                                                : "bg-white text-gray-400 border-gray-100 hover:border-primary/30 hover:bg-gray-50"
                                                 }`}
                                             title={iconName}
                                         >
