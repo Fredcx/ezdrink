@@ -53,41 +53,53 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         if (pathname === '/admin/login') return;
+
+        // Wait for AuthContext to initialize
         if (authLoading) return;
 
         // If not authenticated, go to login
         if (!isAuthenticated) {
+            console.log("AdminLayout: Not authenticated, redirecting to login.");
             window.location.href = '/admin/login';
             return;
         }
 
-        // If authenticated but not admin (assuming context has user_type, or we fetch it)
-        // Context User type currently only has name and phone.
-        // We need to upgrade AuthContext or fetch here.
-        // Let's fetch /api/users/me to verify Role.
+        // Verify if user is admin
         const verifyRole = async () => {
             const token = localStorage.getItem('ezdrink_token');
+            if (!token) {
+                window.location.href = '/admin/login';
+                return;
+            }
+
             try {
                 const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.user_type !== 'admin' && data.establishment_role !== 'manager') {
-                        // User is customer -> redirect to Login (or Home?)
-                        // User requested "Admin Login Page" usage.
-                        // If I am customer, I should be prompted to login AS ADMIN.
-                        // So redirect to /admin/login is correct.
+                    // Setup safer check
+                    const isManager = data.establishment_role === 'manager';
+                    const isAdmin = data.user_type === 'admin';
+
+                    if (!isAdmin && !isManager) {
+                        console.log("AdminLayout: User is not admin/manager. Redirecting.");
                         window.location.href = '/admin/login';
                     }
                 } else {
+                    console.log("AdminLayout: /api/users/me failed. Redirecting.");
                     window.location.href = '/admin/login';
                 }
             } catch (e) {
+                console.error("AdminLayout: Verification Error", e);
                 window.location.href = '/admin/login';
             }
         };
-        verifyRole();
+
+        if (isAuthenticated) {
+            verifyRole();
+        }
 
     }, [pathname, isAuthenticated, authLoading]);
 

@@ -48,9 +48,15 @@ export default function AdminLoginPage() {
                     return;
                 }
 
+                // CLEAR OLD TOKEN FIRST
+                localStorage.removeItem('ezdrink_token');
+
+                // Set new token
                 localStorage.setItem('ezdrink_token', data.token);
-                // Force reload or redirect to admin
-                window.location.href = "/admin";
+
+                // Force context update or simple reload
+                // Using replace to avoid back button loop
+                window.location.replace("/admin");
             } else {
                 alert(data.error || "Erro ao entrar");
             }
