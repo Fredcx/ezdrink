@@ -3,11 +3,9 @@
 import { motion } from "framer-motion";
 import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowUpRight, CreditCard, Banknote, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
-    const { isAuthenticated, isLoading: isAuthLoading } = useAuth(); // Global Auth
     const router = useRouter();
 
     const [stats, setStats] = useState({
@@ -17,7 +15,6 @@ export default function AdminDashboard() {
         ticket: 0
     });
 
-    // New Dashboard Data
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -26,13 +23,10 @@ export default function AdminDashboard() {
         if (!token) {
             router.push('/admin/login');
         } else {
-            setLoading(false); // Assume auth is handled by Layout, just proceed to fetch
+            setLoading(false);
             fetchData();
         }
     }, [router]);
-
-    // Remove Global Auth Checks
-    // if (isAuthLoading || !isAuthenticated) ... -> Removed because we are independent now.
 
     const fetchData = async () => {
         try {
@@ -43,26 +37,25 @@ export default function AdminDashboard() {
             }
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            // Fetch Stats Aggregates (New Endpoint)
+            // Fetch Stats Aggregates
             const resStats = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/admin/dashboard-stats`, { headers });
 
             if (resStats.ok) {
                 const data = await resStats.json();
-                setDashboardData(data); // { salesByHour, countByHour, paymentStats, totalOrders, topProductByHour }
+                setDashboardData(data); // { salesByHour, countByHour, paymentStats, totalOrders, topProductByHour, recentOrders }
 
                 // Calculate Totals for top cards
-                const salesTotal = data.salesByHour.reduce((a: number, b: number) => a + b, 0);
-                const ordersTotal = data.totalOrders;
+                const salesTotal = data.salesByHour ? data.salesByHour.reduce((a: number, b: number) => a + b, 0) : 0;
+                const ordersTotal = data.totalOrders || 0;
                 const ticket = ordersTotal > 0 ? salesTotal / ordersTotal : 0;
 
                 setStats({
                     sales: salesTotal,
                     orders: ordersTotal,
-                    users: 0, // We could fetch users count if needed, or stick to dummy/separate call
+                    users: 0, // Fallback
                     ticket: ticket
                 });
             } else {
-                // Fallback to old method if endpoint fails (or 404 while deploying)
                 console.warn("Dashboard stats endpoint unavailable");
             }
 
@@ -70,7 +63,7 @@ export default function AdminDashboard() {
             const resUsers = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/admin/users`, { headers });
             if (resUsers.ok) {
                 const users = await resUsers.json();
-                setStats(prev => ({ ...prev, users: users.length }));
+                setStats(prev => ({ ...prev, users: Array.isArray(users) ? users.length : 0 }));
             }
 
         } catch (error) {
@@ -87,14 +80,13 @@ export default function AdminDashboard() {
         { label: "Ticket Médio", value: `R$ ${stats.ticket.toFixed(2).replace('.', ',')}`, icon: TrendingUp, trend: "+4.1%", color: "bg-orange-100 text-orange-600" },
     ];
 
-    // Helper to calculate percentage
     const getPct = (val: number) => {
-        if (!dashboardData || dashboardData.totalOrders === 0) return 0;
+        if (!dashboardData || !dashboardData.totalOrders || dashboardData.totalOrders === 0) return 0;
         return Math.round((val / dashboardData.totalOrders) * 100);
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-7xl mx-auto space-y-8 pb-10">
             <header>
                 <h1 className="text-3xl font-black text-gray-900">Dashboard de Vendas</h1>
                 <p className="text-gray-500 font-medium">Visão geral do desempenho em tempo real.</p>
@@ -129,9 +121,8 @@ export default function AdminDashboard() {
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 lg:col-span-2">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">Vendas por Hora</h2>
                         <div className="h-64 flex items-end justify-between gap-2">
-                            {dashboardData.salesByHour.map((val: number, h: number) => {
-                                // Simple Normalization
-                                const max = Math.max(...dashboardData.salesByHour, 1);
+                            {dashboardData.salesByHour && dashboardData.salesByHour.map((val: number, h: number) => {
+                                const max = Math.max(...(dashboardData.salesByHour || [1]), 1);
                                 const heightPct = (val / max) * 100;
                                 const isPeak = val === max && val > 0;
 
@@ -141,7 +132,6 @@ export default function AdminDashboard() {
                                             className={`w-full max-w-[20px] rounded-t-lg transition-all duration-500 ${isPeak ? 'bg-primary' : 'bg-gray-100 group-hover:bg-primary/50'}`}
                                             style={{ height: `${heightPct}%` }}
                                         ></div>
-                                        {/* Tooltip */}
                                         <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs p-2 rounded-lg whitespace-nowrap z-10 pointer-events-none">
                                             {h}h: R$ {val.toFixed(0)} ({dashboardData.countByHour[h]} peds)
                                             {dashboardData.topProductByHour[h] && (
@@ -155,60 +145,39 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    {/* Payment Specs (Conversion) */}
+                    {/* Payment Specs */}
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-2">Índices de Conversão</h2>
 
-                        {/* Card */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-bold text-gray-700">
-                                <span className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> Cartão</span>
-                                <span>{getPct(dashboardData.paymentStats.credit_card)}%</span>
-                            </div>
-                            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${getPct(dashboardData.paymentStats.credit_card)}%` }}
-                                    className="h-full bg-blue-500 rounded-full"
-                                />
-                            </div>
-                        </div>
+                        {['credit_card', 'pix', 'cash'].map((method) => {
+                            const val = dashboardData.paymentStats ? dashboardData.paymentStats[method] : 0;
+                            const pct = getPct(val);
+                            const label = method === 'credit_card' ? 'Cartão' : method === 'pix' ? 'Pix' : 'Outros';
+                            const Icon = method === 'credit_card' ? CreditCard : method === 'pix' ? QrCode : Banknote;
+                            const color = method === 'credit_card' ? 'bg-blue-500' : method === 'pix' ? 'bg-green-500' : 'bg-gray-400';
 
-                        {/* Pix */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-bold text-gray-700">
-                                <span className="flex items-center gap-2"><QrCode className="w-4 h-4" /> Pix</span>
-                                <span>{getPct(dashboardData.paymentStats.pix)}%</span>
-                            </div>
-                            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${getPct(dashboardData.paymentStats.pix)}%` }}
-                                    className="h-full bg-green-500 rounded-full"
-                                />
-                            </div>
-                        </div>
+                            return (
+                                <div key={method} className="space-y-2">
+                                    <div className="flex justify-between text-sm font-bold text-gray-700">
+                                        <span className="flex items-center gap-2"><Icon className="w-4 h-4" /> {label}</span>
+                                        <span>{pct}%</span>
+                                    </div>
+                                    <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${pct}%` }}
+                                            className={`h-full ${color} rounded-full`}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
 
-                        {/* Money/Other */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm font-bold text-gray-700">
-                                <span className="flex items-center gap-2"><Banknote className="w-4 h-4" /> Outros</span>
-                                <span>{getPct(dashboardData.paymentStats.cash)}%</span>
-                            </div>
-                            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${getPct(dashboardData.paymentStats.cash)}%` }}
-                                    className="h-full bg-gray-400 rounded-full"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Top Products Timeline Mini-List */}
+                        {/* Top Products Timeline */}
                         <div className="pt-6 border-t border-gray-100">
                             <h3 className="text-sm font-bold text-gray-900 mb-4">Destaques por Horário</h3>
                             <div className="space-y-3 h-48 overflow-y-auto pr-2 custom-scrollbar">
-                                {dashboardData.topProductByHour.map((prod: any, h: number) => {
+                                {dashboardData.topProductByHour && dashboardData.topProductByHour.map((prod: any, h: number) => {
                                     if (!prod) return null;
                                     return (
                                         <div key={h} className="flex items-center justify-between text-xs">
@@ -224,6 +193,48 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Recent Orders Preview (Restored) */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8 mt-10 overflow-x-auto">
+                <div className="flex items-center justify-between mb-8 min-w-[600px]">
+                    <h2 className="text-xl font-bold text-gray-900">Pedidos Recentes</h2>
+                    <button onClick={() => router.push('/admin/orders')} className="text-primary font-bold text-sm hover:underline">Ver todos</button>
+                </div>
+
+                <div className="space-y-4 min-w-[600px]">
+                    {loading ? (
+                        <div className="text-center py-10 text-gray-400 animate-pulse">Carregando...</div>
+                    ) : (!dashboardData?.recentOrders || dashboardData.recentOrders.length === 0) ? (
+                        <div className="text-center py-10 text-gray-400">Nenhum pedido recente.</div>
+                    ) : dashboardData.recentOrders.map((order: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-100 group">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center font-bold text-gray-500">
+                                    #{order.ticket_code}
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Pedido #{order.id}</h4>
+                                    <p className="text-xs text-gray-500 font-medium">{order.user_email || order.customer_name || 'Cliente'}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="block font-bold text-gray-900">R$ {(order.total || order.total_amount || 0).toFixed(2).replace('.', ',')}</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-md ${order.status === 'paid' ? 'text-green-600 bg-green-100' :
+                                        order.status === 'ready' ? 'text-blue-600 bg-blue-100' :
+                                            order.status === 'completed' ? 'text-gray-600 bg-gray-100' :
+                                                order.status === 'cancelled' ? 'text-red-600 bg-red-100' :
+                                                    'text-yellow-600 bg-yellow-100'
+                                    }`}>
+                                    {order.status === 'paid' ? 'Pago' :
+                                        order.status === 'ready' ? 'Pronto' :
+                                            order.status === 'completed' ? 'Concluído' :
+                                                order.status === 'cancelled' ? 'Cancelado' : order.status}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
         </div>
     );
