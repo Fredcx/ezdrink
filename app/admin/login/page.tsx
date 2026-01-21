@@ -48,14 +48,10 @@ export default function AdminLoginPage() {
                     return;
                 }
 
-                // CLEAR OLD TOKEN FIRST
-                localStorage.removeItem('ezdrink_token');
+                // SAVE TO ADMIN SPECIFIC TOKEN
+                localStorage.setItem('ezdrink_admin_token', data.token);
 
-                // Set new token
-                localStorage.setItem('ezdrink_token', data.token);
-
-                // Force context update or simple reload
-                // Using replace to avoid back button loop
+                // Use replace to ensure fresh state
                 window.location.replace("/admin");
             } else {
                 alert(data.error || "Erro ao entrar");

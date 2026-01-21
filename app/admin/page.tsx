@@ -22,29 +22,25 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isAuthLoading && !isAuthenticated) {
-            router.push('/login');
-        } else if (isAuthenticated) {
+        const token = localStorage.getItem('ezdrink_admin_token');
+        if (!token) {
+            router.push('/admin/login');
+        } else {
+            setLoading(false); // Assume auth is handled by Layout, just proceed to fetch
             fetchData();
         }
-    }, [isAuthLoading, isAuthenticated, router]);
+    }, [router]);
 
-    // Force re-fetch on auth change just in case
-    useEffect(() => {
-        if (isAuthenticated) fetchData();
-    }, [isAuthenticated]);
-
-    if (isAuthLoading || !isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
+    // Remove Global Auth Checks
+    // if (isAuthLoading || !isAuthenticated) ... -> Removed because we are independent now.
 
     const fetchData = async () => {
         try {
-            const token = localStorage.getItem('ezdrink_token');
+            const token = localStorage.getItem('ezdrink_admin_token');
+            if (!token) {
+                router.push('/admin/login');
+                return;
+            }
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // Fetch Stats Aggregates (New Endpoint)

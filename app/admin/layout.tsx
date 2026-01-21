@@ -4,12 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, ShoppingBag, Users, Utensils, Settings, LogOut, Menu, X, UserCheck } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext"; // Kept for logout from client if needed, or remove? Better keep for consistency but use local logic.
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const { logout } = useAuth();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const LINKS = [
@@ -23,85 +22,55 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const isActive = (path: string) => pathname === path;
 
-    // Protection Logic
-    useEffect(() => {
-        // Allow public access to login page
-        if (pathname === '/admin/login') return;
+    const handleLogout = () => {
+        localStorage.removeItem('ezdrink_admin_token');
+        window.location.href = '/admin/login';
+    };
 
-        const checkAdmin = async () => {
-            const token = localStorage.getItem('ezdrink_token');
-            if (!token) {
-                window.location.href = '/admin/login';
-                return;
-            }
-
-            // Verify if admin via /api/users/me or check token payload if we could decode it.
-            // For safety, let's just check if we have a user in context? context takes time to load.
-            // Let's assume if token exists, we check via API or decoded token.
-            // Simplest: Decode token or fetch 'me'.
-            // For now, let's rely on backend 403 calls eventually, but for UI redirection:
-            // Fetch 'me' to be sure?
-            // "Quick" check: If context says isAuthenticated, check role.
-            // If context loading, wait.
-        };
-        // We can use AuthContext `user` but it might be 'customer'.
-        // If !isLoading and (!user || type != admin) -> redirect.
-    }, [pathname]);
-
-    // Use Context for protection
-    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-
+    // Independent Admin Auth Logic
+    // We do NOT rely on global AuthContext (which is for Clients) to avoid conflicts.
     useEffect(() => {
         if (pathname === '/admin/login') return;
 
-        // Wait for AuthContext to initialize
-        if (authLoading) return;
-
-        // If not authenticated, go to login
-        if (!isAuthenticated) {
-            console.log("AdminLayout: Not authenticated, redirecting to login.");
-            window.location.href = '/admin/login';
-            return;
-        }
-
-        // Verify if user is admin
-        const verifyRole = async () => {
-            const token = localStorage.getItem('ezdrink_token');
+        const checkAdminAuth = async () => {
+            const token = localStorage.getItem('ezdrink_admin_token');
             if (!token) {
+                console.log("AdminLayout: No admin token found. Redirecting.");
                 window.location.href = '/admin/login';
                 return;
             }
 
             try {
+                // Verify token validity and role
                 const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/users/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Setup safer check
                     const isManager = data.establishment_role === 'manager';
                     const isAdmin = data.user_type === 'admin';
 
                     if (!isAdmin && !isManager) {
-                        console.log("AdminLayout: User is not admin/manager. Redirecting.");
+                        console.log("AdminLayout: Token valid but not admin. Redirecting.");
+                        localStorage.removeItem('ezdrink_admin_token'); // Clear invalid
                         window.location.href = '/admin/login';
                     }
+                    // Else: Access Granted.
                 } else {
-                    console.log("AdminLayout: /api/users/me failed. Redirecting.");
+                    console.log("AdminLayout: Token verification failed. Redirecting.");
+                    localStorage.removeItem('ezdrink_admin_token');
                     window.location.href = '/admin/login';
                 }
             } catch (e) {
                 console.error("AdminLayout: Verification Error", e);
-                window.location.href = '/admin/login';
+                // Don't loop forcefully on network error, keep current state (maybe offline?)
             }
         };
 
-        if (isAuthenticated) {
-            verifyRole();
-        }
+        checkAdminAuth();
 
-    }, [pathname, isAuthenticated, authLoading]);
+    }, [pathname]);
 
     // If on login page, render just children (simple layout)
     if (pathname === '/admin/login') {
@@ -136,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <div className="p-4">
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:bg-red-500/20 hover:text-red-100 transition-colors w-full font-bold"
                     >
                         <LogOut className="w-5 h-5" />
@@ -179,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 </Link>
                             ))}
                             <button
-                                onClick={logout}
+                                onClick={handleLogout}
                                 className="flex items-center gap-3 px-4 py-4 mt-8 rounded-xl text-red-200 bg-red-500/20 w-full font-bold"
                             >
                                 <LogOut className="w-6 h-6" />
