@@ -42,15 +42,16 @@ export default function Home() {
       })
       .catch(err => console.error("Erro ao carregar produtos:", err));
 
-    // Fetch categories
+    // Fetch categories from new API
     const fetchCategories = async () => {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .order('order_index', { ascending: true });
-
-      if (data) {
-        setCategories(data);
+      try {
+        const res = await fetch('/api/menu-categories');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar categorias:", error);
       }
     };
     fetchCategories();
