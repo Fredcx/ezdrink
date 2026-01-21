@@ -1129,7 +1129,8 @@ app.post('/api/group-orders', authenticateToken, async (req, res) => {
   const { cart, members } = req.body; // members: [{ email: '...', amount?: 100 }, ...] OR just emails if equal split
 
   if (!cart || cart.length === 0) return res.status(400).json({ error: 'Carrinho vazio' });
-  if (!members || members.length === 0) return res.status(400).json({ error: 'Nenhum membro convidado' });
+  // Allow empty members (just host creating the lobby)
+  // if (!members || members.length === 0) return res.status(400).json({ error: 'Nenhum membro convidado' });
 
   // Calculate Total
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -1138,7 +1139,8 @@ app.post('/api/group-orders', authenticateToken, async (req, res) => {
   // Assume equal split for MVP if specific amounts not provided
   // Validation: Sum of shares must equal Total? 
   // For simplicity MVP: Divide equally by (members.length + 1 [host])
-  const totalPeople = members.length + 1;
+  const membersCount = members ? members.length : 0;
+  const totalPeople = membersCount + 1;
   const sharePrice = parseFloat((total / totalPeople).toFixed(2));
 
   // Fix rounding error by giving remainder to host or first member? 
@@ -1170,7 +1172,8 @@ app.post('/api/group-orders', authenticateToken, async (req, res) => {
 
     // 3. Add Members
     // Host Share
-    const hostShare = (total - (sharePrice * members.length)).toFixed(2); // Adjust remainder
+    const safeMembers = members || [];
+    const hostShare = (total - (sharePrice * safeMembers.length)).toFixed(2); // Adjust remainder
 
     const membersData = [
       {
@@ -1179,7 +1182,7 @@ app.post('/api/group-orders', authenticateToken, async (req, res) => {
         share_amount: hostShare,
         status: 'pending' // Host usually pays immediately after creation, but logically is pending
       },
-      ...members.map(m => ({
+      ...safeMembers.map(m => ({
         group_order_id: groupOrder.id,
         email: m.email,
         share_amount: sharePrice,
@@ -1191,9 +1194,11 @@ app.post('/api/group-orders', authenticateToken, async (req, res) => {
     if (membersError) throw membersError;
 
     // 4. Send Emails (Mock)
-    members.forEach(m => {
-      console.log(`[EMAIL SEND] To: ${m.email} | Subject: Dividir Conta EzDrink | Link: app/pay-split/${groupOrder.id}?email=${m.email}`);
-    });
+    if (members && members.length > 0) {
+      members.forEach(m => {
+        console.log(`[EMAIL SEND] To: ${m.email} | Subject: Dividir Conta EzDrink | Link: app/pay-split/${groupOrder.id}?email=${m.email}`);
+      });
+    }
 
     res.json({ success: true, groupOrderId: groupOrder.id, orderTicket });
 
