@@ -64,7 +64,7 @@ const PagarmeClient = {
                     name: customer.name,
                     email: customer.email || `test_${Date.now()}@ezdrink.com`,
                     type: 'individual',
-                    document: finalCpf,
+                    document: (customer.document && customer.document.length > 5) ? customer.document : generateCPF(),
                     phones: {
                         mobile_phone: {
                             country_code: '55',

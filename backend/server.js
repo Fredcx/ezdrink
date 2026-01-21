@@ -1061,7 +1061,8 @@ app.post('/api/orders/create-pix', authenticateToken, async (req, res) => {
 
   } catch (err) {
     console.error("Pix Order Error:", err);
-    res.status(500).json({ error: 'Erro ao criar Pix. Verifique a chave de API ou os dados do cliente.' });
+    // Return the actual error message from Pagar.me client
+    res.status(500).json({ error: err.message || "Erro desconhecido ao criar Pix" });
   }
 });
 
