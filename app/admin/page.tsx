@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowUpRight, CreditCard, Banknote, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
+// Force Re-Deploy Trigger
 import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
@@ -220,10 +221,10 @@ export default function AdminDashboard() {
                             <div className="text-right">
                                 <span className="block font-bold text-gray-900">R$ {(order.total || order.total_amount || 0).toFixed(2).replace('.', ',')}</span>
                                 <span className={`text-xs font-bold px-2 py-1 rounded-md ${order.status === 'paid' ? 'text-green-600 bg-green-100' :
-                                        order.status === 'ready' ? 'text-blue-600 bg-blue-100' :
-                                            order.status === 'completed' ? 'text-gray-600 bg-gray-100' :
-                                                order.status === 'cancelled' ? 'text-red-600 bg-red-100' :
-                                                    'text-yellow-600 bg-yellow-100'
+                                    order.status === 'ready' ? 'text-blue-600 bg-blue-100' :
+                                        order.status === 'completed' ? 'text-gray-600 bg-gray-100' :
+                                            order.status === 'cancelled' ? 'text-red-600 bg-red-100' :
+                                                'text-yellow-600 bg-yellow-100'
                                     }`}>
                                     {order.status === 'paid' ? 'Pago' :
                                         order.status === 'ready' ? 'Pronto' :
