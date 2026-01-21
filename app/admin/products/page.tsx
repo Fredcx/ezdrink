@@ -51,8 +51,14 @@ export default function AdminProductsPage() {
     }, []);
 
     const fetchCategories = async () => {
-        const { data } = await supabase.from('categories').select('*').order('order_index');
-        if (data) setCategories(data);
+        try {
+            const res = await fetch('/api/menu-categories');
+            if (!res.ok) throw new Error("Failed to fetch categories");
+            const data = await res.json();
+            setCategories(data || []);
+        } catch (error) {
+            console.error("Failed to fetch categories", error);
+        }
     };
 
     const fetchProducts = async () => {
