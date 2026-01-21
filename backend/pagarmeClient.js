@@ -3,8 +3,11 @@ const axios = require('axios');
 // API Configuration
 // NOTE: Replace keys with real process.env variables in production
 // Fallback to test key for debugging
-const API_KEY = process.env.PAGARME_API_KEY;
+// Fallback to test key for debugging
+const API_KEY = (process.env.PAGARME_API_KEY || '').trim();
 const BASE_URL = 'https://api.pagar.me/core/v5';
+
+console.log("Pagar.me Client Initialized. Key Length:", API_KEY.length, "Prefix:", API_KEY.substring(0, 4));
 
 const api = axios.create({
     baseURL: BASE_URL,
