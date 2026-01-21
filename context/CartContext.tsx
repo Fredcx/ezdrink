@@ -24,6 +24,21 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
 
+    useEffect(() => {
+        const saved = localStorage.getItem('@ezdrink/cart');
+        if (saved) {
+            try {
+                setItems(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse cart", e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('@ezdrink/cart', JSON.stringify(items));
+    }, [items]);
+
     const addItem = (newItem: Omit<CartItem, "quantity">) => {
         setItems((prev) => {
             const existing = prev.find((i) => i.id === newItem.id);
@@ -44,7 +59,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
     };
 
-    const clearCart = () => setItems([]);
+    const clearCart = () => {
+        setItems([]);
+        localStorage.removeItem('@ezdrink/cart');
+    };
 
     const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const count = items.reduce((acc, item) => acc + item.quantity, 0);
