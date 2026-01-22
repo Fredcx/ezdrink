@@ -185,9 +185,8 @@ const PagarmeClient = {
 
                 payload.payments[0].credit_card = cardPayment;
 
-            } else if (payment_method === 'pix') {
                 payload.payments[0].pix = {
-                    expires_in: 3600, // 1 hour
+                    expires_in: 600, // 10 minutes
                 };
             }
 

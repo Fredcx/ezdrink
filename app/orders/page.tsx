@@ -20,8 +20,10 @@ interface Order {
 }
 
 // Countdown component for live updates
-function OrderCountdown({ createdAt, duration = 3600 }: { createdAt: string, duration?: number }) {
-    const [timeLeft, setTimeLeft] = useState<number>(0);
+function OrderCountdown({ createdAt, duration = 600 }: { createdAt: string, duration?: number }) {
+    // Timer State
+    const initialTime = 600; // 10 minutes (align with backend)
+    const [timeLeft, setTimeLeft] = useState(initialTime);
 
     useEffect(() => {
         if (!createdAt) return;

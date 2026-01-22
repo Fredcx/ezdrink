@@ -18,7 +18,7 @@ function PixPaymentContent() {
     const displayAmount = amountParam ? parseFloat(amountParam) : (total * 1.05);
 
     // Timer State
-    const initialTime = 3600; // 1 hour (align with backend)
+    const initialTime = 600; // 10 minutes (align with backend)
     const [timeLeft, setTimeLeft] = useState(initialTime);
 
     const pixCode = searchParams.get('qr_code');

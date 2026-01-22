@@ -1411,7 +1411,23 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 
   const { data: orders, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
-  res.json(orders);
+
+  // Auto-Cancel Expired Pix Orders (10 mins)
+  const now = Date.now();
+  const updatedOrders = await Promise.all(orders.map(async (order) => {
+    if (order.status === 'pending_payment' && order.payment_method === 'pix') {
+      const created = new Date(order.created_at).getTime();
+      const diffMinutes = (now - created) / 1000 / 60;
+      if (diffMinutes > 10) {
+        // Mark as cancelled in DB
+        await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id);
+        return { ...order, status: 'cancelled' };
+      }
+    }
+    return order;
+  }));
+
+  res.json(updatedOrders);
 });
 
 // Cancel Group Order
