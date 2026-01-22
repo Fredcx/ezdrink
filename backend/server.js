@@ -1155,7 +1155,7 @@ app.post('/api/orders/create-pix', authenticateToken, async (req, res) => {
       items: cart,
       pagarme_id: pagarmeOrder.id,
       qr_code: qr_code // Save if needed for future retrieval
-    }).select().single();
+    }).select('ticket_code, total_amount, qr_code, created_at').single();
 
     if (error) throw error;
 
@@ -1164,7 +1164,8 @@ app.post('/api/orders/create-pix', authenticateToken, async (req, res) => {
       orderId: order.ticket_code,
       total,
       qr_code: qr_code,
-      qr_code_url: qr_code_url
+      qr_code_url: qr_code_url,
+      created_at: order.created_at
     });
 
   } catch (err) {

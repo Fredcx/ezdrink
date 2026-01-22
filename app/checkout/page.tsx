@@ -112,7 +112,8 @@ export default function CheckoutPage() {
                     const params = new URLSearchParams({
                         amount: data.total.toString(),
                         ticket: data.orderId,
-                        qr_code: data.qr_code || ''
+                        qr_code: data.qr_code || '',
+                        created_at: data.created_at || ''
                     });
                     router.push(`/payment/pix?${params.toString()}`);
                 } else {
