@@ -24,8 +24,12 @@ function OrderCountdown({ createdAt, duration = 3600 }: { createdAt: string, dur
     const [timeLeft, setTimeLeft] = useState<number>(0);
 
     useEffect(() => {
+        if (!createdAt) return;
         const calculate = () => {
-            const start = new Date(createdAt).getTime();
+            const startDate = new Date(createdAt);
+            if (isNaN(startDate.getTime())) return;
+
+            const start = startDate.getTime();
             const now = Date.now();
             const diff = Math.floor((now - start) / 1000);
             setTimeLeft(Math.max(0, duration - diff));
