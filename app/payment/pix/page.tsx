@@ -18,30 +18,34 @@ function PixPaymentContent() {
     const displayAmount = amountParam ? parseFloat(amountParam) : (total * 1.05);
 
     // Timer State
-    const initialTime = 600; // 10 minutes
+    const initialTime = 3600; // 1 hour (align with backend)
     const [timeLeft, setTimeLeft] = useState(initialTime);
 
     const pixCode = searchParams.get('qr_code');
     const ticket = searchParams.get('ticket');
+    const createdAtParam = searchParams.get('created_at');
 
-    // If we have a ticket but no QR code in params, we might need to fetch it (Future improvement)
-    // For now, if no QR code, show a placeholder or handle error.
-    // Ideally, we shouldn't redirect blindly.
-
-    // Check if we came from checkout
+    // Timer Calculation logic
     useEffect(() => {
-        if (!pixCode && !ticket) {
-            // Maybe redirect back if absolutely nothing is present
-            // router.push('/orders');
+        if (createdAtParam) {
+            const calculate = () => {
+                const start = new Date(createdAtParam).getTime();
+                const now = Date.now();
+                const diffSeconds = Math.floor((now - start) / 1000);
+                const remaining = Math.max(0, initialTime - diffSeconds);
+                setTimeLeft(remaining);
+            };
+            calculate();
+            const interval = setInterval(calculate, 1000);
+            return () => clearInterval(interval);
+        } else {
+            // Fallback for direct checkout or missing param
+            const timer = setInterval(() => {
+                setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+            return () => clearInterval(timer);
         }
-    }, [pixCode, ticket, router]);
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+    }, [createdAtParam]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);

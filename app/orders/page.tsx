@@ -12,7 +12,35 @@ interface Order {
     items: { name: string; quantity: number; image_url?: string }[];
     total: number;
     date: string;
+    created_at: string;
     status: string;
+    payment_method: string;
+    qr_code?: string;
+    group_order_id?: string;
+}
+
+// Countdown component for live updates
+function OrderCountdown({ createdAt, duration = 3600 }: { createdAt: string, duration?: number }) {
+    const [timeLeft, setTimeLeft] = useState<number>(0);
+
+    useEffect(() => {
+        const calculate = () => {
+            const start = new Date(createdAt).getTime();
+            const now = Date.now();
+            const diff = Math.floor((now - start) / 1000);
+            setTimeLeft(Math.max(0, duration - diff));
+        };
+
+        calculate();
+        const timer = setInterval(calculate, 1000);
+        return () => clearInterval(timer);
+    }, [createdAt, duration]);
+
+    if (timeLeft <= 0) return <span className="text-red-600 font-bold">Expirado</span>;
+
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    return <span>Expira em {m.toString().padStart(2, '0')}:{s.toString().padStart(2, '0')}</span>;
 }
 
 export default function OrdersPage() {
@@ -47,6 +75,8 @@ export default function OrdersPage() {
                     date: new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
                     status: order.status,
                     payment_method: order.payment_method,
+                    qr_code: order.qr_code,
+                    created_at: order.created_at,
                     // If it came from group_orders join or logic 2 (memberOrders)
                     group_order_id: order.group_orders?.[0]?.id || order.group_order_id
                 }));
@@ -156,9 +186,14 @@ export default function OrdersPage() {
                                                     <p className="text-xs text-gray-400 font-medium">{order.date}</p>
 
                                                     {order.status === 'pending_payment' && (
-                                                        <div className="flex items-center gap-1 text-red-500">
-                                                            <AlertCircle className="w-3 h-3" />
-                                                            <span className="text-xs font-bold">Pagamento pendente</span>
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-1 text-red-500">
+                                                                <AlertCircle className="w-3 h-3" />
+                                                                <span className="text-xs font-bold">Pagamento pendente</span>
+                                                            </div>
+                                                            <div className="text-[10px] text-red-400 font-bold bg-red-50 px-2 py-0.5 rounded-full self-start">
+                                                                <OrderCountdown createdAt={order.created_at} />
+                                                            </div>
                                                         </div>
                                                     )}
                                                     {order.status === 'pending_group' && (
@@ -190,7 +225,15 @@ export default function OrdersPage() {
                                                 </button>
                                             ) : order.status === 'pending_payment' ? (
                                                 <button
-                                                    onClick={() => router.push('/payment/pix')}
+                                                    onClick={() => {
+                                                        const params = new URLSearchParams({
+                                                            amount: order.total.toString(),
+                                                            ticket: order.ticket_code,
+                                                            qr_code: order.qr_code || '',
+                                                            created_at: order.created_at
+                                                        });
+                                                        router.push(`/payment/pix?${params.toString()}`);
+                                                    }}
                                                     className="bg-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:brightness-110 transition-colors shadow-sm"
                                                 >
                                                     Ver copia e cola ativo
