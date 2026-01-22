@@ -1007,7 +1007,7 @@ app.post('/api/orders/create-card', authenticateToken, async (req, res) => {
   if (!card_id) return res.status(400).json({ error: 'Cartão não selecionado' });
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal + 3.75; // Taxa fixa
+  const total = subtotal * 1.05; // Taxa de 5%
 
   // 1. Resolve Pagar.me ID
   const { data: card, error: cardError } = await supabase.from('cards')
@@ -1084,7 +1084,7 @@ app.post('/api/orders/create-balance', authenticateToken, async (req, res) => {
   if (!cart || cart.length === 0) return res.status(400).json({ error: 'Carrinho vazio' });
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal + 3.75;
+  const total = subtotal * 1.05; // Taxa de 5%
 
   // Check & Deduct Balance
   const newBalance = await updateUserBalance(req.user.email, -total);
@@ -1111,7 +1111,7 @@ app.post('/api/orders/create-pix', authenticateToken, async (req, res) => {
   if (!cart || cart.length === 0) return res.status(400).json({ error: 'Carrinho vazio' });
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal + 3.75; // Taxa fixa
+  const total = subtotal * 1.05; // Taxa de 5%
 
   try {
     // 1. Create Pagar.me Pix Order

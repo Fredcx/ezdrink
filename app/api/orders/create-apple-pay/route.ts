@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         if (!appleToken) return NextResponse.json({ error: 'Token Apple Pay não fornecido' }, { status: 400 });
 
         const subtotal = cart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
-        const total = subtotal + 3.75;
+        const total = subtotal * 1.05; // Taxa de 5%
 
         const customer = {
             name: profile?.full_name || user.email,
