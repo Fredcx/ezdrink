@@ -1414,6 +1414,28 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
   res.json(orders);
 });
 
+// Cancel Group Order
+app.put('/api/group-orders/:id/cancel', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Get Group Order to find main order_id
+    const { data: group, error: fetchErr } = await supabase.from('group_orders').select('order_id').eq('id', id).single();
+    if (fetchErr || !group) return res.status(404).json({ error: 'Grupo não encontrado' });
+
+    // 2. Update Group Status
+    await supabase.from('group_orders').update({ status: 'cancelled' }).eq('id', id);
+
+    // 3. Update Main Order Status
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', group.order_id);
+
+    res.json({ success: true, message: 'Grupo e Pedido cancelados com sucesso.' });
+  } catch (err) {
+    console.error("Cancel Group Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 5. Get Order by Ticket (For Waiter/Admin)
 app.get('/api/orders/ticket/:code', async (req, res) => {
   const { data: order, error } = await supabase.from('orders').select('*').eq('ticket_code', req.params.code).single();

@@ -220,10 +220,22 @@ export default function SplitLobbyPage() {
                                 Pagar uma parte
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (confirm("Tem certeza que deseja cancelar esta divisão?")) {
-                                        // TODO: Call API to cancel group order
-                                        router.push('/orders');
+                                        try {
+                                            const token = localStorage.getItem('ezdrink_token');
+                                            const res = await fetch(`${(process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "")}/api/group-orders/${id}/cancel`, {
+                                                method: 'PUT',
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (res.ok) {
+                                                router.push('/orders');
+                                            } else {
+                                                alert("Erro ao cancelar grupo");
+                                            }
+                                        } catch (error) {
+                                            alert("Erro de conexão");
+                                        }
                                     }
                                 }}
                                 className="w-full bg-red-100 text-red-600 font-bold py-4 rounded-xl shadow-sm hover:bg-red-200 mb-8 active:scale-95 transition-all"
