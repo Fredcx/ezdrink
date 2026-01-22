@@ -1,6 +1,6 @@
 // Native fetch in Node 18+
 
-const BASE_URL = 'http://localhost:3000'; // Make sure backend is running
+const BASE_URL = 'http://localhost:3001'; // Make sure backend is running on 3001
 
 async function testDashboard() {
     console.log("1. Logging in as Admin...");

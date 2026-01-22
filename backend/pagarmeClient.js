@@ -1,6 +1,4 @@
-// HARDCODED DEBUG KEY - To prove Vercel Env Var issue
-const API_KEY = 'sk_7b094b5f14074ac49278557acf6ccf1c';
-// const API_KEY = (process.env.PAGARME_API_KEY || '').trim();
+const API_KEY = (process.env.PAGARME_API_KEY || '').trim();
 const BASE_URL = 'https://api.pagar.me/core/v5';
 
 console.log("Pagar.me Client Initialized (Fetch Version). Key Length:", API_KEY.length, "Prefix:", API_KEY.substring(0, 4));

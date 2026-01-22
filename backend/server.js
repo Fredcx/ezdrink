@@ -679,6 +679,8 @@ app.get('/api/admin/dashboard-stats', authenticateToken, async (req, res) => {
       }
     });
 
+    console.log("Pagar.me Pix Order Created Successfully!");
+
     // Resolve Top Product per Hour
     const topProductByHour = Array(24).fill(null);
     for (let h = 0; h < 24; h++) {
